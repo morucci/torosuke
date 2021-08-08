@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Torosuke.Binance where
 
 import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withText)
@@ -16,9 +14,10 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
+import Torosuke.Common.Types
 
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
-data BiKline = Kline
+data BiKline = BiKline
   { biOpenT :: UTCTime,
     biOpen :: Float,
     biHigh :: Float,
@@ -29,7 +28,19 @@ data BiKline = Kline
   }
   deriving (Show)
 
-newtype BiKlines = Klines [BiKline] deriving (Generic, Show)
+toKlines :: BiKline -> Kline
+toKlines BiKline {..} =
+  Kline
+    { openT = biOpenT,
+      open = biOpen,
+      high = biHigh,
+      low = biLow,
+      close = biClose,
+      volume = biVolume,
+      closeT = biCloseT
+    }
+
+newtype BiKlines = BiKlines [BiKline] deriving (Generic, Show)
 
 instance FromJSON BiKlines
 
@@ -38,7 +49,7 @@ instance FromJSON BiKline where
     -- let v' = trace (show v) v
     case toList v of
       [openT, open, high, low, close, volume, closeT, _, _, _, _, _] ->
-        Kline
+        BiKline
           <$> sciToD openT
           <*> sTof open
           <*> sTof high
@@ -83,6 +94,7 @@ getKlinesURL pair interval limit' endTM' =
         ++ limit
         ++ endT
 
+adate :: UTCTime
 adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
 
 getKlines :: String -> String -> Int -> Maybe UTCTime -> IO (Maybe BiKlines)
