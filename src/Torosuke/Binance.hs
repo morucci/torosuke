@@ -6,7 +6,7 @@ import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withT
 import Data.Aeson.Types (parseFail)
 import qualified Data.Scientific as S
 import Data.Time.Clock
-import Data.Time.Format (defaultTimeLocale, parseTimeM)
+import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Network.HTTP.Client
   ( Response (responseBody),
     httpLbs,
@@ -58,7 +58,7 @@ instance FromJSON BiKline where
           _ -> parseFail "Unable to parse date"
         where
           getInt :: S.Scientific -> Maybe Int
-          getInt s = case S.floatingOrInteger s of
+          getInt s = case (S.floatingOrInteger s :: Either Float Int) of
             Right i -> Just i
             Left _ -> Nothing
 
@@ -67,21 +67,27 @@ parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
   where
     tryParse fmt = parseTimeM False defaultTimeLocale fmt (conv epoch)
     conv :: Int -> String
-    conv i = show $ round $ fromIntegral i / 1000
+    conv i = show (round (fromIntegral i / 1000 :: Float) :: Int)
 
-getKlinesURL :: String -> String -> Int -> String
-getKlinesURL pair interval limit' =
+getKlinesURL :: String -> String -> Int -> Maybe UTCTime -> String
+getKlinesURL pair interval limit' endTM' =
   let limit = show limit'
+      endT = case endTM' of
+        Just endT' -> "&endTime=" ++ formatTime defaultTimeLocale "%s" endT' ++ "000"
+        Nothing -> ""
    in "https://api.binance.com/api/v3/klines?symbol="
         ++ pair
         ++ "&interval="
         ++ interval
         ++ "&limit="
         ++ limit
+        ++ endT
 
-getKlines :: String -> String -> Int -> IO (Maybe BiKlines)
-getKlines pair interval limit = do
+adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
+
+getKlines :: String -> String -> Int -> Maybe UTCTime -> IO (Maybe BiKlines)
+getKlines pair interval limit endTM = do
   manager <- newManager tlsManagerSettings
-  request <- parseRequest $ getKlinesURL pair interval limit
+  request <- parseRequest $ getKlinesURL pair interval limit endTM
   response <- httpLbs request manager
   pure $ decode $ responseBody response
