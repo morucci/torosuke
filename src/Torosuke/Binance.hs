@@ -18,25 +18,22 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
 
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
-data Kline = Kline
-  { openT :: UTCTime,
-    open :: Float,
-    high :: Float,
-    low :: Float,
-    close :: Float,
-    volume :: Float,
-    closeT :: UTCTime
+data BiKline = Kline
+  { biOpenT :: UTCTime,
+    biOpen :: Float,
+    biHigh :: Float,
+    biLow :: Float,
+    biClose :: Float,
+    biVolume :: Float,
+    biCloseT :: UTCTime
   }
   deriving (Show)
 
-newtype Klines = Klines [Kline] deriving (Generic, Show)
+newtype BiKlines = Klines [BiKline] deriving (Generic, Show)
 
-instance FromJSON Klines
+instance FromJSON BiKlines
 
-fakeDate :: UTCTime
-fakeDate = fromMaybe (error "nop") (readMaybe "2021-05-31 10:00:00 Z")
-
-instance FromJSON Kline where
+instance FromJSON BiKline where
   parseJSON = withArray "kline" $ \v -> do
     -- let v' = trace (show v) v
     case toList v of
@@ -72,16 +69,19 @@ parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
     conv :: Int -> String
     conv i = show $ round $ fromIntegral i / 1000
 
-getKlinesURL :: String -> String -> String
-getKlinesURL pair interval = "https://api.binance.com/api/v3/klines?symbol=" ++ pair ++ "&interval=" ++ interval ++ "&limit=" ++ "10"
+getKlinesURL :: String -> String -> Int -> String
+getKlinesURL pair interval limit' =
+  let limit = show limit'
+   in "https://api.binance.com/api/v3/klines?symbol="
+        ++ pair
+        ++ "&interval="
+        ++ interval
+        ++ "&limit="
+        ++ limit
 
-getKlines :: IO (Maybe Klines)
-getKlines = do
+getKlines :: String -> String -> Int -> IO (Maybe BiKlines)
+getKlines pair interval limit = do
   manager <- newManager tlsManagerSettings
-  initReq <- parseRequest $ getKlinesURL "ADAUSDT" "1h"
-  let request = initReq
+  request <- parseRequest $ getKlinesURL pair interval limit
   response <- httpLbs request manager
-  -- print (responseBody response)
-  let decoded = decode $ responseBody response
-  print decoded
-  pure decoded
+  pure $ decode $ responseBody response
