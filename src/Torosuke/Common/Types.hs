@@ -19,7 +19,7 @@ instance FromJSON Kline
 
 instance ToJSON Kline
 
-newtype Klines = Klines [Kline] deriving (Show, Generic)
+newtype Klines = Klines {kGet :: [Kline]} deriving (Show, Generic)
 
 instance FromJSON Klines
 

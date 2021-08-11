@@ -28,8 +28,8 @@ data BiKline = BiKline
   }
   deriving (Show)
 
-toKlines :: BiKline -> Kline
-toKlines BiKline {..} =
+toKline :: BiKline -> Kline
+toKline BiKline {..} =
   Kline
     { openT = biOpenT,
       open = biOpen,
@@ -39,6 +39,11 @@ toKlines BiKline {..} =
       volume = biVolume,
       closeT = biCloseT
     }
+
+toKlines :: BiKlines -> Klines
+toKlines bkls = Klines (toKline <$> biGet bkls)
+  where
+    biGet (BiKlines kls) = kls
 
 newtype BiKlines = BiKlines [BiKline] deriving (Generic, Show)
 
@@ -97,9 +102,10 @@ getKlinesURL pair interval limit' endTM' =
 adate :: UTCTime
 adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
 
-getKlines :: String -> String -> Int -> Maybe UTCTime -> IO (Maybe BiKlines)
+getKlines :: String -> String -> Int -> Maybe UTCTime -> IO (Maybe Klines)
 getKlines pair interval limit endTM = do
   manager <- newManager tlsManagerSettings
   request <- parseRequest $ getKlinesURL pair interval limit endTM
   response <- httpLbs request manager
-  pure $ decode $ responseBody response
+  let decoded = decode $ responseBody response :: Maybe BiKlines
+  pure $ toKlines <$> decoded
