@@ -1,7 +1,9 @@
 module Torosuke.Common.Types where
 
 import Data.Aeson
+import qualified Data.HashMap.Strict as HM
 import Data.Time.Clock
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Relude
 
 data Kline = Kline
@@ -24,3 +26,17 @@ newtype Klines = Klines {kGet :: [Kline]} deriving (Show, Generic)
 instance FromJSON Klines
 
 instance ToJSON Klines
+
+newtype KlinesHM = KlinesHM {unKlinesHM :: HM.HashMap Text Kline} deriving (Show, Generic)
+
+instance FromJSON KlinesHM
+
+instance ToJSON KlinesHM
+
+getK :: Kline -> Text
+getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
+
+toKlinesHM :: Klines -> KlinesHM
+toKlinesHM kls = KlinesHM $ HM.fromList $ toTuple <$> kGet kls
+  where
+    toTuple kl = (getK kl, kl)
