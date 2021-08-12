@@ -1,7 +1,8 @@
 module Torosuke.Binance where
 
-import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withText)
+import Data.Aeson (FromJSON, decode, encode, parseJSON, withArray, withScientific, withText)
 import Data.Aeson.Types (parseFail)
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Scientific as S
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
@@ -14,6 +15,7 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
+import System.Directory (doesFileExist, getTemporaryDirectory, renameFile)
 import Torosuke.Common.Types
 
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
@@ -109,3 +111,37 @@ getKlines pair interval limit endTM = do
   response <- httpLbs request manager
   let decoded = decode $ responseBody response :: Maybe BiKlines
   pure $ toKlines <$> decoded
+
+dumpKlines :: Text -> KlinesHM -> IO ()
+dumpKlines filename kls = do
+  tmpDir <- getTemporaryDirectory
+  let filename' = toString filename
+  let tmpFile = tmpDir ++ "/" ++ filename'
+  let content = decodeUtf8 $ encode kls
+  writeFile tmpFile content
+  renameFile tmpFile filename'
+
+loadKlines :: Text -> IO (Maybe KlinesHM)
+loadKlines filename = do
+  exists <- doesFileExist $ toString filename
+  if exists
+    then
+      ( do
+          content <- readFile $ toString filename
+          pure $ decode $ encodeUtf8 content
+      )
+    else pure Nothing
+
+getKlines' :: IO ()
+getKlines' = do
+  let filename = "dump.json"
+  stored <- loadKlines filename
+  fetched <- getKlines "ADAUSDT" "1d" 10 Nothing
+  let toDump = case (stored, fetched) of
+        (Nothing, Nothing) -> emptyKlinesHM
+        (Just stored', Nothing) -> stored'
+        (Nothing, Just fetched') -> toKlinesHM fetched'
+        (Just stored', Just fetched') ->
+          KlinesHM $
+            HM.union (unKlinesHM $ toKlinesHM fetched') (unKlinesHM stored')
+  dumpKlines filename toDump

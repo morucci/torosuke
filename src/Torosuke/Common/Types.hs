@@ -36,6 +36,9 @@ instance ToJSON KlinesHM
 getK :: Kline -> Text
 getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
 
+emptyKlinesHM :: KlinesHM
+emptyKlinesHM = KlinesHM HM.empty
+
 toKlinesHM :: Klines -> KlinesHM
 toKlinesHM kls = KlinesHM $ HM.fromList $ toTuple <$> kGet kls
   where
