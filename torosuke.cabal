@@ -60,6 +60,8 @@ library
   hs-source-dirs:      src
   exposed-modules:     Torosuke.Binance
                      , Torosuke.Common.Types
+                     , Torosuke.Common.Store
+                     , Torosuke.Ta
 
 executable torosuke-cli
   import:              common-options

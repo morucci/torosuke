@@ -43,3 +43,15 @@ toKlinesHM :: Klines -> KlinesHM
 toKlinesHM kls = KlinesHM $ HM.fromList $ toTuple <$> kGet kls
   where
     toTuple kl = (getK kl, kl)
+
+getCloseP :: Klines -> [Float]
+getCloseP kls = map getCP $ kGet kls
+  where
+    getCP :: Kline -> Float
+    getCP Kline {..} = close
+
+getCloseT :: Klines -> [UTCTime]
+getCloseT kls = map getCT $ kGet kls
+  where
+    getCT :: Kline -> UTCTime
+    getCT Kline {..} = closeT
