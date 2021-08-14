@@ -33,6 +33,21 @@ instance FromJSON KlinesHM
 
 instance ToJSON KlinesHM
 
+data Pair = ADAUSDT | BTCUSDT
+
+pairToText :: IsString p => Pair -> p
+pairToText = \case
+  ADAUSDT -> "ADAUSDT"
+  BTCUSDT -> "BTCUSDT"
+
+data Interval = ONE_H | ONE_D | FIVETEEN_M
+
+intervalToText :: Interval -> [Char]
+intervalToText = \case
+  ONE_D -> "1d"
+  ONE_H -> "1h"
+  FIVETEEN_M -> "15m"
+
 getK :: Kline -> Text
 getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
 

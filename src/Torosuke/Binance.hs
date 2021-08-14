@@ -2,7 +2,6 @@ module Torosuke.Binance where
 
 import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withText)
 import Data.Aeson.Types (parseFail)
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Scientific as S
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
@@ -15,7 +14,6 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
-import Torosuke.Common.Store
 import Torosuke.Common.Types
 
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
@@ -87,16 +85,16 @@ parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
     conv :: Int -> String
     conv i = show (round (fromIntegral i / 1000 :: Float) :: Int)
 
-getKlinesURL :: String -> String -> Int -> Maybe UTCTime -> String
+getKlinesURL :: Pair -> Interval -> Int -> Maybe UTCTime -> String
 getKlinesURL pair interval limit' endTM' =
   let limit = show limit'
       endT = case endTM' of
         Just endT' -> "&endTime=" ++ formatTime defaultTimeLocale "%s" endT' ++ "000"
         Nothing -> ""
    in "https://api.binance.com/api/v3/klines?symbol="
-        ++ pair
+        ++ pairToText pair
         ++ "&interval="
-        ++ interval
+        ++ intervalToText interval
         ++ "&limit="
         ++ limit
         ++ endT
@@ -104,24 +102,10 @@ getKlinesURL pair interval limit' endTM' =
 adate :: UTCTime
 adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
 
-getKlines :: String -> String -> Int -> Maybe UTCTime -> IO (Maybe Klines)
+getKlines :: Pair -> Interval -> Int -> Maybe UTCTime -> IO (Maybe Klines)
 getKlines pair interval limit endTM = do
   manager <- newManager tlsManagerSettings
   request <- parseRequest $ getKlinesURL pair interval limit endTM
   response <- httpLbs request manager
   let decoded = decode $ responseBody response :: Maybe BiKlines
   pure $ toKlines <$> decoded
-
-getKlines' :: IO ()
-getKlines' = do
-  let filename = getDumpPath "binance" "ADAUSDT" "1d"
-  stored <- loadKlines filename
-  fetched <- getKlines "ADAUSDT" "1d" 10 Nothing
-  let toDump = case (stored, fetched) of
-        (Nothing, Nothing) -> emptyKlinesHM
-        (Just stored', Nothing) -> stored'
-        (Nothing, Just fetched') -> toKlinesHM fetched'
-        (Just stored', Just fetched') ->
-          KlinesHM $
-            HM.union (unKlinesHM $ toKlinesHM fetched') (unKlinesHM stored')
-  dumpKlines filename toDump
