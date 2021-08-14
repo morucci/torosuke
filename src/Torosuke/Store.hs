@@ -1,10 +1,10 @@
-module Torosuke.Common.Store where
+module Torosuke.Store where
 
 import Data.Aeson (ToJSON, decode, encode)
 import qualified Data.Text as T
 import Relude
 import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
-import Torosuke.Common.Types
+import Torosuke.Types
 import qualified Prelude (show)
 
 data DumpPath = DumpPath {dpDir :: FilePath, dpName :: FilePath}

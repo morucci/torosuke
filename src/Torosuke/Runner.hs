@@ -3,9 +3,9 @@ module Torosuke.Runner where
 import qualified Data.HashMap.Strict as HM
 import Relude
 import Torosuke.Binance
-import Torosuke.Common.Store
-import Torosuke.Common.Types
+import Torosuke.Store
 import Torosuke.Ta
+import Torosuke.Types
 
 runner :: Pair -> Interval -> IO ()
 runner pair interval = do

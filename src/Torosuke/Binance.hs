@@ -14,7 +14,7 @@ import Network.HTTP.Client
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Relude
-import Torosuke.Common.Types
+import Torosuke.Types
 
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
 data BiKline = BiKline

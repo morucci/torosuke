@@ -4,7 +4,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.List ((!!))
 import Data.Time.Clock
 import Relude
-import Torosuke.Common.Types
+import Torosuke.Types
 
 data Macd = Macd {macdLine :: [Float], signalLine :: [Float]} deriving (Show, Generic)
 

@@ -1,4 +1,4 @@
-module Torosuke.Common.Types where
+module Torosuke.Types where
 
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
