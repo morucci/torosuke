@@ -1,11 +1,16 @@
 module Torosuke.Ta where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.List ((!!))
 import Data.Time.Clock
 import Relude
 import Torosuke.Common.Types
 
-data Macd = Macd {macdLine :: [Float], signalLine :: [Float]} deriving (Show)
+data Macd = Macd {macdLine :: [Float], signalLine :: [Float]} deriving (Show, Generic)
+
+instance ToJSON Macd
+
+instance FromJSON Macd
 
 data MacdAnalysis = MacdAnalysis
   { maCS :: [Bool],
@@ -13,7 +18,11 @@ data MacdAnalysis = MacdAnalysis
     maMLAZ :: [Bool],
     maMVASL :: [Bool]
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON MacdAnalysis
+
+instance FromJSON MacdAnalysis
 
 data Analysis = Analysis
   { aKlines :: Klines,
@@ -21,7 +30,11 @@ data Analysis = Analysis
     aMacdAnalisys :: MacdAnalysis,
     aDate :: [UTCTime]
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance ToJSON Analysis
+
+instance FromJSON Analysis
 
 _ema :: Int -> [Float] -> Float
 _ema period series = case series of
