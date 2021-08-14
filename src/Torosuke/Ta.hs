@@ -7,10 +7,18 @@ import Torosuke.Common.Types
 
 data Macd = Macd {macdLine :: [Float], signalLine :: [Float]} deriving (Show)
 
+data MacdAnalysis = MacdAnalysis
+  { maCS :: [Bool],
+    maSLAZ :: [Bool],
+    maMLAZ :: [Bool],
+    maMVASL :: [Bool]
+  }
+  deriving (Show)
+
 data Analysis = Analysis
   { aKlines :: Klines,
     aMacd :: Macd,
-    aMacdCL :: [Bool],
+    aMacdAnalisys :: MacdAnalysis,
     aDate :: [UTCTime]
   }
   deriving (Show)
@@ -44,25 +52,40 @@ macd_12_26_9 series =
   where
     compute_macd_line :: [Float] -> [Float] -> [Float]
     compute_macd_line s l =
-      map (\(i, sv) -> sv - (!!) l i) $ zip [0 .. length s] s
+      zipWith (\i sv -> sv - (!!) l i) [0 .. length s] s
+
+macdLineAboveSignal :: Macd -> [Bool]
+macdLineAboveSignal Macd {..} =
+  let merged = zip macdLine signalLine
+   in map (uncurry (>)) merged
+
+macdLineAboveZero :: Macd -> [Bool]
+macdLineAboveZero Macd {..} = map (> 0) macdLine
+
+signalLineAboveZero :: Macd -> [Bool]
+signalLineAboveZero Macd {..} = map (> 0) signalLine
 
 crossSignal :: Macd -> [Bool]
 crossSignal Macd {..} =
   let merged = zip macdLine signalLine
    in zipWith
-        (curry check)
+        check
         (map computeMacdAboveSignal merged)
         (map computeMacdAboveSignal $ drop 1 merged)
   where
-    computeMacdAboveSignal :: (Float, Float) -> Bool
     computeMacdAboveSignal (ml, sl) = ml > sl
-    check (b1, b2) = not b1 == b2
+    check b1 b2 = not b1 == b2
 
 getTAAnalysis :: Klines -> Analysis
 getTAAnalysis kls =
   let closePrice = getCloseP kls
       aKlines = kls
       aMacd = macd_12_26_9 closePrice
-      aMacdCL = crossSignal aMacd
+      aMacdAnalisys =
+        MacdAnalysis
+          (crossSignal aMacd)
+          (macdLineAboveZero aMacd)
+          (signalLineAboveZero aMacd)
+          (macdLineAboveSignal aMacd)
       aDate = reverse $ getCloseT kls
    in Analysis {..}
