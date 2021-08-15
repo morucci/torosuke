@@ -31,8 +31,9 @@ pairFetcherAndAnalyzer pair interval until depth = do
   where
     merge set1 set2 =
       Klines $
-        HM.elems $
-          HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
+        sort $
+          HM.elems $
+            HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
     log pair' interval' depth' status =
       print $
         "Fetching "
@@ -52,11 +53,11 @@ pairFetcherAndAnalyzer pair interval until depth = do
 delayStr :: Show a => a -> String
 delayStr delay = toString (show delay :: String)
 
-liveRunner :: IO ()
-liveRunner = do run
+liveRunner :: Pair -> Interval -> IO ()
+liveRunner pair interval = do run
   where
     run = do
-      _ <- pairFetcherAndAnalyzer ADAUSDT ONE_D Nothing 100
+      _ <- pairFetcherAndAnalyzer pair interval Nothing 100
       _ <- wait
       run
     wait = do
@@ -65,16 +66,21 @@ liveRunner = do run
     delay :: Int
     delay = 10
 
-historicalFetcher :: UTCTime -> IO ()
-historicalFetcher startDate = do
+historicalFetcher :: Pair -> Interval -> UTCTime -> UTCTime -> IO ()
+historicalFetcher pair interval startDate endDate = do
   _ <- run startDate
   pure ()
   where
     run :: UTCTime -> IO ()
     run date = do
-      lastCandleDate <- pairFetcherAndAnalyzer ADAUSDT ONE_D (Just date) 100
-      print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
-      threadDelay (1000000 * delay)
-      run lastCandleDate
+      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 100
+      if lastCandleDate <= endDate
+        then do
+          print ("Reached request end date. Stopping." :: String)
+          pure ()
+        else do
+          print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
+          threadDelay (1000000 * delay)
+          run lastCandleDate
     delay :: Int
     delay = 10
