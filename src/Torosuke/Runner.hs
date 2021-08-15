@@ -66,8 +66,8 @@ liveRunner pair interval = do run
     delay :: Int
     delay = 10
 
-historicalFetcher :: Pair -> Interval -> UTCTime -> UTCTime -> IO ()
-historicalFetcher pair interval startDate endDate = do
+historicalRunner :: Pair -> Interval -> UTCTime -> UTCTime -> IO ()
+historicalRunner pair interval startDate endDate = do
   _ <- run startDate
   pure ()
   where
