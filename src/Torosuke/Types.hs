@@ -4,6 +4,7 @@ import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import Network.HTTP.Types
 import Relude
 
 data Kline = Kline
@@ -47,6 +48,12 @@ intervalToText = \case
   ONE_D -> "1d"
   ONE_H -> "1h"
   FIVETEEN_M -> "15m"
+
+data KlinesHTTPResponse = KlinesHTTPResponse
+  { reStatus :: Status,
+    reHeasders :: ResponseHeaders,
+    reKlines :: Maybe Klines
+  }
 
 getK :: Kline -> Text
 getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT

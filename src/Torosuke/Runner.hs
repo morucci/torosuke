@@ -7,13 +7,21 @@ import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
 
-runner :: Pair -> Interval -> IO ()
-runner pair interval = do
+pairFetcherAndAnalyzer :: Pair -> Interval -> IO ()
+pairFetcherAndAnalyzer pair interval = do
   let klinesDP = getKlinesDumpPath pair interval
       klinesDPLast100 = getKlinesDumpPathLast100 pair interval
       klinesAnalysis = getKlinesAnalysisDumpPath pair interval
   stored <- loadKlines klinesDP
-  fetchedM <- getKlines pair interval 500 Nothing
+  resp <- getKlines pair interval 500 Nothing
+  let (KlinesHTTPResponse status _ fetchedM) = resp
+  print $
+    "Fetching - "
+      <> pairToText pair
+      <> " at interval:"
+      <> intervalToText interval
+      <> " - status:"
+      <> show status
   let (updatedKlines, analysis) = case (stored, fetchedM) of
         (Nothing, Nothing) -> error "Unable to decode dump and to fetch from API"
         (Just _, Nothing) -> error "Unable to fetch from API"
@@ -27,3 +35,9 @@ runner pair interval = do
       Klines $
         HM.elems $
           HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
+
+runner :: IO ()
+runner = do
+  _ <- pairFetcherAndAnalyzer ADAUSDT ONE_D
+  _ <- pairFetcherAndAnalyzer ADAUSDT ONE_H
+  pure ()

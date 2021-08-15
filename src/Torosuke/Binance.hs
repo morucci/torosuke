@@ -6,7 +6,7 @@ import qualified Data.Scientific as S
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Network.HTTP.Client
-  ( Response (responseBody),
+  ( Response (responseBody, responseHeaders, responseStatus),
     httpLbs,
     newManager,
     parseRequest,
@@ -102,10 +102,14 @@ getKlinesURL pair interval limit' endTM' =
 adate :: UTCTime
 adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
 
-getKlines :: Pair -> Interval -> Int -> Maybe UTCTime -> IO (Maybe Klines)
+getKlines :: Pair -> Interval -> Int -> Maybe UTCTime -> IO KlinesHTTPResponse
 getKlines pair interval limit endTM = do
   manager <- newManager tlsManagerSettings
   request <- parseRequest $ getKlinesURL pair interval limit endTM
   response <- httpLbs request manager
   let decoded = decode $ responseBody response :: Maybe BiKlines
-  pure $ toKlines <$> decoded
+  pure $
+    KlinesHTTPResponse
+      (responseStatus response)
+      (responseHeaders response)
+      (toKlines <$> decoded)
