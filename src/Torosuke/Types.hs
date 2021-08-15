@@ -62,7 +62,7 @@ data KlinesHTTPResponse = KlinesHTTPResponse
   }
 
 getLast100Klines :: Klines -> Klines
-getLast100Klines Klines {..} = Klines $ take 100 $ reverse $ sort kGet
+getLast100Klines Klines {..} = Klines $ reverse $ take 100 $ reverse $ sort kGet
 
 getLastDate :: Klines -> UTCTime
 getLastDate Klines {..} = closeT $ Prelude.head $ sort kGet

@@ -9,8 +9,8 @@ import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
 
-pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> Int -> IO UTCTime
-pairFetcherAndAnalyzer pair interval until depth = do
+pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> Int -> Bool -> IO UTCTime
+pairFetcherAndAnalyzer pair interval until depth dumpAnalysis = do
   let klinesDP = getKlinesDumpPath pair interval
       klinesAnalysis = getKlinesAnalysisDumpPath pair interval
   stored <- loadKlines klinesDP
@@ -23,9 +23,9 @@ pairFetcherAndAnalyzer pair interval until depth = do
         (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched', getLastDate fetched')
         (Just stored', Just fetched') ->
           let merged = merge stored' fetched'
-           in (merged, getTAAnalysis $ getLast100Klines merged, getLastDate fetched')
+           in (merged, getTAAnalysis fetched', getLastDate fetched')
   dumpData klinesDP updatedKlines
-  dumpData klinesAnalysis analysis
+  if dumpAnalysis then dumpData klinesAnalysis analysis else pure ()
   pure lastCandleDate
   where
     merge set1 set2 =
@@ -56,7 +56,7 @@ liveRunner :: Pair -> Interval -> IO ()
 liveRunner pair interval = do run
   where
     run = do
-      _ <- pairFetcherAndAnalyzer pair interval Nothing 100
+      _ <- pairFetcherAndAnalyzer pair interval Nothing 100 True
       _ <- wait
       run
     wait = do
@@ -72,7 +72,7 @@ historicalRunner pair interval startDate endDate = do
   where
     run :: UTCTime -> IO ()
     run date = do
-      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 500
+      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 500 False
       if lastCandleDate <= endDate
         then do
           print ("Reached request end date. Stopping." :: String)
