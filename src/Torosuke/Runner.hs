@@ -1,5 +1,6 @@
 module Torosuke.Runner where
 
+import Control.Concurrent (threadDelay)
 import qualified Data.HashMap.Strict as HM
 import Data.Time.Clock
 import Relude
@@ -7,16 +8,17 @@ import Torosuke.Binance
 import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
+import Prelude (head)
 
-pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> IO ()
-pairFetcherAndAnalyzer pair interval until = do
+pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> Int -> IO UTCTime
+pairFetcherAndAnalyzer pair interval until depth = do
   let klinesDP = getKlinesDumpPath pair interval
       klinesDPLast100 = getKlinesDumpPathLast100 pair interval
       klinesAnalysis = getKlinesAnalysisDumpPath pair interval
   stored <- loadKlines klinesDP
-  resp <- getKlines pair interval 500 until
+  resp <- getKlines pair interval depth until
   let (KlinesHTTPResponse status _ fetchedM) = resp
-  log pair interval status
+  log pair interval depth status
   let (updatedKlines, analysis) = case (stored, fetchedM) of
         (Nothing, Nothing) -> error "Unable to decode dump and to fetch from API"
         (Just _, Nothing) -> error "Unable to fetch from API"
@@ -25,14 +27,17 @@ pairFetcherAndAnalyzer pair interval until = do
   dumpData klinesDP updatedKlines
   dumpData klinesDPLast100 (Klines $ take 100 $ kGet updatedKlines)
   dumpData klinesAnalysis analysis
+  pure $ closeT $ Prelude.head $ kGet $ aKlines analysis
   where
     merge set1 set2 =
       Klines $
         HM.elems $
           HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
-    log pair' interval' status =
+    log pair' interval' depth' status =
       print $
-        "Fetching 500 candles - pair: "
+        "Fetching "
+          <> show depth'
+          <> " candles - pair: "
           <> pairToText pair'
           <> ", interval: "
           <> intervalToText interval'
@@ -44,8 +49,32 @@ pairFetcherAndAnalyzer pair interval until = do
           <> " - status: "
           <> show status
 
-runner :: IO ()
-runner = do
-  _ <- pairFetcherAndAnalyzer ADAUSDT ONE_D Nothing
-  _ <- pairFetcherAndAnalyzer ADAUSDT ONE_H Nothing
+delayStr :: Show a => a -> String
+delayStr delay = toString (show delay :: String)
+
+liveRunner :: IO ()
+liveRunner = do run
+  where
+    run = do
+      _ <- pairFetcherAndAnalyzer ADAUSDT ONE_D Nothing 100
+      _ <- wait
+      run
+    wait = do
+      print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
+      threadDelay (1000000 * delay)
+    delay :: Int
+    delay = 10
+
+historicalFetcher :: UTCTime -> IO ()
+historicalFetcher startDate = do
+  _ <- run startDate
   pure ()
+  where
+    run :: UTCTime -> IO ()
+    run date = do
+      lastCandleDate <- pairFetcherAndAnalyzer ADAUSDT ONE_D (Just date) 100
+      print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
+      threadDelay (1000000 * delay)
+      run lastCandleDate
+    delay :: Int
+    delay = 10
