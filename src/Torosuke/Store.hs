@@ -21,9 +21,6 @@ getDumpPath' tname pair interval =
 getKlinesDumpPath :: Pair -> Interval -> DumpPath
 getKlinesDumpPath = getDumpPath' ""
 
-getKlinesDumpPathLast100 :: Pair -> Interval -> DumpPath
-getKlinesDumpPathLast100 = getDumpPath' "last_100"
-
 getKlinesAnalysisDumpPath :: Pair -> Interval -> DumpPath
 getKlinesAnalysisDumpPath = getDumpPath' "analysis"
 

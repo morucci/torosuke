@@ -68,8 +68,18 @@ library
 executable torosuke-live-crawler
   import:              common-options
   hs-source-dirs:      app
-  main-is:             cli.hs
+  main-is:             live-crawler.hs
   build-depends:       base
                      , torosuke
                      , relude                     > 1.0.0.0
                      , optparse-generic           < 1.5
+
+executable torosuke-histo-crawler
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             histo-crawler.hs
+  build-depends:       base
+                     , torosuke
+                     , relude                     > 1.0.0.0
+                     , optparse-generic           < 1.5
+                     , time                       < 1.10

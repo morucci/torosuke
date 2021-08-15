@@ -6,6 +6,7 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Types
 import Relude
+import Prelude (head)
 
 data Kline = Kline
   { openT :: UTCTime,
@@ -60,8 +61,11 @@ data KlinesHTTPResponse = KlinesHTTPResponse
     reKlines :: Maybe Klines
   }
 
-getK :: Kline -> Text
-getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
+getLast100Klines :: Klines -> Klines
+getLast100Klines Klines {..} = Klines $ take 100 $ reverse $ sort kGet
+
+getLastDate :: Klines -> UTCTime
+getLastDate Klines {..} = closeT $ Prelude.head $ sort kGet
 
 emptyKlinesHM :: KlinesHM
 emptyKlinesHM = KlinesHM HM.empty
@@ -70,6 +74,7 @@ toKlinesHM :: Klines -> KlinesHM
 toKlinesHM kls = KlinesHM $ HM.fromList $ toTuple <$> kGet kls
   where
     toTuple kl = (getK kl, kl)
+    getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
 
 getCloseP :: Klines -> [Float]
 getCloseP kls = map getCP $ kGet kls

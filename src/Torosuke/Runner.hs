@@ -8,26 +8,25 @@ import Torosuke.Binance
 import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
-import Prelude (head)
 
 pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> Int -> IO UTCTime
 pairFetcherAndAnalyzer pair interval until depth = do
   let klinesDP = getKlinesDumpPath pair interval
-      klinesDPLast100 = getKlinesDumpPathLast100 pair interval
       klinesAnalysis = getKlinesAnalysisDumpPath pair interval
   stored <- loadKlines klinesDP
   resp <- getKlines pair interval depth until
   let (KlinesHTTPResponse status _ fetchedM) = resp
   log pair interval depth status
-  let (updatedKlines, analysis) = case (stored, fetchedM) of
+  let (updatedKlines, analysis, lastCandleDate) = case (stored, fetchedM) of
         (Nothing, Nothing) -> error "Unable to decode dump and to fetch from API"
         (Just _, Nothing) -> error "Unable to fetch from API"
-        (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched')
-        (Just stored', Just fetched') -> (merge stored' fetched', getTAAnalysis fetched')
+        (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched', getLastDate fetched')
+        (Just stored', Just fetched') ->
+          let merged = merge stored' fetched'
+           in (merged, getTAAnalysis $ getLast100Klines merged, getLastDate fetched')
   dumpData klinesDP updatedKlines
-  dumpData klinesDPLast100 (Klines $ take 100 $ kGet updatedKlines)
   dumpData klinesAnalysis analysis
-  pure $ closeT $ Prelude.head $ kGet $ aKlines analysis
+  pure lastCandleDate
   where
     merge set1 set2 =
       Klines $
@@ -73,7 +72,7 @@ historicalRunner pair interval startDate endDate = do
   where
     run :: UTCTime -> IO ()
     run date = do
-      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 100
+      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 500
       if lastCandleDate <= endDate
         then do
           print ("Reached request end date. Stopping." :: String)
@@ -83,4 +82,4 @@ historicalRunner pair interval startDate endDate = do
           threadDelay (1000000 * delay)
           run lastCandleDate
     delay :: Int
-    delay = 10
+    delay = 1
