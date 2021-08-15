@@ -34,20 +34,25 @@ instance FromJSON KlinesHM
 
 instance ToJSON KlinesHM
 
-data Pair = ADAUSDT | BTCUSDT
+newtype Pair = Pair {unPair :: String}
 
-pairToText :: IsString p => Pair -> p
-pairToText = \case
-  ADAUSDT -> "ADAUSDT"
-  BTCUSDT -> "BTCUSDT"
+pairToText :: Pair -> String
+pairToText = unPair
 
-data Interval = ONE_H | ONE_D | FIVETEEN_M
+data Interval = ONE_H | ONE_D
+
+textToInterval :: (IsString a, Eq a) => a -> Interval
+textToInterval = \case
+  "1H" -> ONE_H
+  "1h" -> ONE_H
+  "1D" -> ONE_D
+  "1d" -> ONE_D
+  _ -> error "Unsupported interval"
 
 intervalToText :: Interval -> [Char]
 intervalToText = \case
   ONE_D -> "1d"
   ONE_H -> "1h"
-  FIVETEEN_M -> "15m"
 
 data KlinesHTTPResponse = KlinesHTTPResponse
   { reStatus :: Status,

@@ -65,9 +65,11 @@ library
                      , Torosuke.Ta
                      , Torosuke.Runner
 
-executable torosuke-cli
+executable torosuke-live-crawler
   import:              common-options
   hs-source-dirs:      app
   main-is:             cli.hs
   build-depends:       base
+                     , torosuke
                      , relude                     > 1.0.0.0
+                     , optparse-generic           < 1.5
