@@ -56,7 +56,7 @@ liveRunner :: Pair -> Interval -> IO ()
 liveRunner pair interval = do run
   where
     run = do
-      _ <- pairFetcherAndAnalyzer pair interval Nothing 100 True
+      _ <- pairFetcherAndAnalyzer pair interval Nothing 600 True
       _ <- wait
       run
     wait = do
@@ -72,7 +72,7 @@ historicalRunner pair interval startDate endDate = do
   where
     run :: UTCTime -> IO ()
     run date = do
-      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 500 False
+      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 1000 False
       if lastCandleDate <= endDate
         then do
           print ("Reached request end date. Stopping." :: String)

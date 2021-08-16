@@ -10,11 +10,11 @@ import Prelude (head)
 
 data Kline = Kline
   { openT :: UTCTime,
-    open :: Float,
-    high :: Float,
-    low :: Float,
-    close :: Float,
-    volume :: Float,
+    open :: Double,
+    high :: Double,
+    low :: Double,
+    close :: Double,
+    volume :: Double,
     closeT :: UTCTime
   }
   deriving (Show, Eq, Ord, Generic)
@@ -76,10 +76,10 @@ toKlinesHM kls = KlinesHM $ HM.fromList $ toTuple <$> kGet kls
     toTuple kl = (getK kl, kl)
     getK Kline {openT} = toText $ formatTime defaultTimeLocale "%s" openT
 
-getCloseP :: Klines -> [Float]
+getCloseP :: Klines -> [Double]
 getCloseP kls = map getCP $ kGet kls
   where
-    getCP :: Kline -> Float
+    getCP :: Kline -> Double
     getCP Kline {..} = close
 
 getCloseT :: Klines -> [UTCTime]

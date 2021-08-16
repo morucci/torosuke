@@ -19,11 +19,11 @@ import Torosuke.Types
 -- https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data
 data BiKline = BiKline
   { biOpenT :: UTCTime,
-    biOpen :: Float,
-    biHigh :: Float,
-    biLow :: Float,
-    biClose :: Float,
-    biVolume :: Float,
+    biOpen :: Double,
+    biHigh :: Double,
+    biLow :: Double,
+    biClose :: Double,
+    biVolume :: Double,
     biCloseT :: UTCTime
   }
   deriving (Show)
@@ -65,7 +65,7 @@ instance FromJSON BiKline where
       otherValue -> parseFail $ "Unexpected amount of elements:" ++ show otherValue
     where
       sTof = withText "sTof" $ \v -> do
-        case readMaybe $ toString v :: Maybe Float of
+        case readMaybe $ toString v :: Maybe Double of
           Just v' -> pure v'
           Nothing -> parseFail "Unable to parse float"
       sciToD = withScientific "sciToD" $ \v -> do
@@ -74,7 +74,7 @@ instance FromJSON BiKline where
           _ -> parseFail "Unable to parse date"
         where
           getInt :: S.Scientific -> Maybe Int
-          getInt s = case (S.floatingOrInteger s :: Either Float Int) of
+          getInt s = case (S.floatingOrInteger s :: Either Double Int) of
             Right i -> Just i
             Left _ -> Nothing
 

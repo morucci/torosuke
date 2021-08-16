@@ -6,7 +6,7 @@ import Data.Time.Clock
 import Relude
 import Torosuke.Types
 
-data Macd = Macd {macdLine :: [Float], signalLine :: [Float]} deriving (Show, Generic)
+data Macd = Macd {macdLine :: [Double], signalLine :: [Double]} deriving (Show, Generic)
 
 instance ToJSON Macd
 
@@ -36,16 +36,16 @@ instance ToJSON Analysis
 
 instance FromJSON Analysis
 
-_ema :: Int -> [Float] -> Float
+_ema :: Int -> [Double] -> Double
 _ema period series = case series of
   [] -> 0
   [x] -> x
   x : xs -> (alpha * x) + ((1 - alpha) * _ema period xs)
   where
-    alpha :: Float
-    alpha = (2.0 :: Float) / fromRational (toRational period + 1)
+    alpha :: Double
+    alpha = (2.0 :: Double) / fromRational (toRational period + 1)
 
-ema :: Int -> [Float] -> [Float]
+ema :: Int -> [Double] -> [Double]
 ema period series =
   take (length series) $ run 0 $ reverse series
   where
@@ -55,7 +55,7 @@ ema period series =
         else _ema period (slice series' i (length series)) : run (i + 1) series'
     slice l i k = drop i $ take k l
 
-macd_12_26_9 :: [Float] -> Macd
+macd_12_26_9 :: [Double] -> Macd
 macd_12_26_9 series =
   let ema_12 = ema 12 series
       ema_26 = ema 26 series
@@ -63,7 +63,7 @@ macd_12_26_9 series =
       signal_line = ema 9 $ reverse macd_line
    in Macd macd_line signal_line
   where
-    compute_macd_line :: [Float] -> [Float] -> [Float]
+    compute_macd_line :: [Double] -> [Double] -> [Double]
     compute_macd_line s l =
       zipWith (\i sv -> sv - (!!) l i) [0 .. length s] s
 
@@ -97,8 +97,8 @@ getTAAnalysis kls =
       aMacdAnalisys =
         MacdAnalysis
           (crossSignal aMacd)
-          (macdLineAboveZero aMacd)
           (signalLineAboveZero aMacd)
+          (macdLineAboveZero aMacd)
           (macdLineAboveSignal aMacd)
       aDate = reverse $ getCloseT kls
    in Analysis {..}
