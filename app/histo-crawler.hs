@@ -39,7 +39,7 @@ main = do
   where
     go :: TorosukeHistoCli Unwrapped -> IO ()
     go args = do
-      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args)
+      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args) toroLogger
       runReaderT
         ( historicalRunner
             (parseDate $ start args)

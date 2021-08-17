@@ -10,7 +10,8 @@ import Prelude (head)
 
 data Env = Env
   { envPair :: Pair,
-    envInterval :: Interval
+    envInterval :: Interval,
+    envLog :: String -> IO ()
   }
 
 data Kline = Kline

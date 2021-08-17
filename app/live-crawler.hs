@@ -30,5 +30,5 @@ main = do
   where
     go :: TorosukeLiveCli Unwrapped -> IO ()
     go args = do
-      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args)
+      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args) toroLogger
       runReaderT liveRunner appEnv
