@@ -58,6 +58,7 @@ library
                      , vector                     < 0.12.4
                      , scientific                 < 0.3.6.3
                      , directory                  < 1.3.6.1
+                     , mtl                        < 2.2.3
   hs-source-dirs:      src
   exposed-modules:     Torosuke.Binance
                      , Torosuke.Types

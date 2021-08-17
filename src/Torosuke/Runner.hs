@@ -1,6 +1,7 @@
 module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad.Reader
 import qualified Data.HashMap.Strict as HM
 import Data.Time.Clock
 import Relude
@@ -9,12 +10,20 @@ import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
 
-pairFetcherAndAnalyzer :: Pair -> Interval -> Maybe UTCTime -> Int -> Bool -> IO UTCTime
-pairFetcherAndAnalyzer pair interval until depth dumpAnalysis = do
-  let klinesDP = getKlinesDumpPath pair interval
+data Env = Env
+  { envPair :: Pair,
+    envInterval :: Interval
+  }
+
+pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> Bool -> ReaderT Env IO UTCTime
+pairFetcherAndAnalyzer until depth dumpAnalysis = do
+  env <- ask
+  let pair = envPair env
+      interval = envInterval env
+      klinesDP = getKlinesDumpPath pair interval
       klinesAnalysis = getKlinesAnalysisDumpPath pair interval
-  stored <- loadKlines klinesDP
-  resp <- getKlines pair interval depth until
+  stored <- liftIO $ loadKlines klinesDP
+  resp <- liftIO $ getKlines pair interval depth until
   let (KlinesHTTPResponse status _ fetchedM) = resp
   log pair interval depth status
   let (updatedKlines, analysis, lastCandleDate) = case (stored, fetchedM) of
@@ -24,8 +33,8 @@ pairFetcherAndAnalyzer pair interval until depth dumpAnalysis = do
         (Just stored', Just fetched') ->
           let merged = merge stored' fetched'
            in (merged, getTAAnalysis fetched', getLastDate fetched')
-  dumpData klinesDP updatedKlines
-  if dumpAnalysis then dumpData klinesAnalysis analysis else pure ()
+  liftIO $ dumpData klinesDP updatedKlines
+  if dumpAnalysis then liftIO $ dumpData klinesAnalysis analysis else pure ()
   pure lastCandleDate
   where
     merge set1 set2 =
@@ -53,12 +62,14 @@ delayStr :: Show a => a -> String
 delayStr delay = toString (show delay :: String)
 
 liveRunner :: Pair -> Interval -> IO ()
-liveRunner pair interval = do run
+liveRunner pair interval = do
+  let runEnv = Env pair interval
+  run runEnv
   where
-    run = do
-      _ <- pairFetcherAndAnalyzer pair interval Nothing 600 True
+    run runEnv' = do
+      _ <- runReaderT (pairFetcherAndAnalyzer Nothing 600 True) runEnv'
       _ <- wait
-      run
+      run runEnv'
     wait = do
       print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
       threadDelay (1000000 * delay)
@@ -67,12 +78,13 @@ liveRunner pair interval = do run
 
 historicalRunner :: Pair -> Interval -> UTCTime -> UTCTime -> IO ()
 historicalRunner pair interval startDate endDate = do
-  _ <- run startDate
+  let runEnv = Env pair interval
+  _ <- run startDate runEnv
   pure ()
   where
-    run :: UTCTime -> IO ()
-    run date = do
-      lastCandleDate <- pairFetcherAndAnalyzer pair interval (Just date) 1000 False
+    run :: UTCTime -> Env -> IO ()
+    run date runEnv' = do
+      lastCandleDate <- runReaderT (pairFetcherAndAnalyzer (Just date) 1000 False) runEnv'
       if lastCandleDate <= endDate
         then do
           print ("Reached request end date. Stopping." :: String)
@@ -80,6 +92,6 @@ historicalRunner pair interval startDate endDate = do
         else do
           print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
           threadDelay (1000000 * delay)
-          run lastCandleDate
+          run lastCandleDate runEnv'
     delay :: Int
     delay = 1
