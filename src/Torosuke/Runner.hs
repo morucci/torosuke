@@ -38,18 +38,13 @@ pairFetcherAndAnalyzer until depth = do
         (Just _, Nothing) -> error "Unable to fetch from API"
         (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched', getLastDate fetched')
         (Just stored', Just fetched') ->
-          let merged = merge stored' fetched'
+          let merged = mergeKlines stored' fetched'
            in (merged, getTAAnalysis fetched', getLastDate fetched')
   liftIO $ logger "Performed analysis of klines"
 
   -- Return last fetched candle
   pure (lastCandleDate, updatedKlines, analysis)
   where
-    merge set1 set2 =
-      Klines $
-        sort $
-          HM.elems $
-            HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
     getLogLine pair' interval' depth' status =
       "Fetched "
         <> show depth'

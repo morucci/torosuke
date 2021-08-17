@@ -73,6 +73,13 @@ getLast100Klines Klines {..} = Klines $ reverse $ take 100 $ reverse $ sort kGet
 getLastDate :: Klines -> UTCTime
 getLastDate Klines {..} = closeT $ Prelude.head $ sort kGet
 
+mergeKlines :: Klines -> Klines -> Klines
+mergeKlines set1 set2 =
+  Klines $
+    sort $
+      HM.elems $
+        HM.union (unKlinesHM $ toKlinesHM set1) (unKlinesHM $ toKlinesHM set2)
+
 emptyKlinesHM :: KlinesHM
 emptyKlinesHM = KlinesHM HM.empty
 
