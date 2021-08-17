@@ -13,19 +13,16 @@ import Torosuke.Types
 toroLogger :: String -> IO ()
 toroLogger = print
 
-pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> Bool -> ReaderT Env IO UTCTime
-pairFetcherAndAnalyzer until depth dumpAnalysis = do
+pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> ReaderT Env IO (UTCTime, Klines, Analysis)
+pairFetcherAndAnalyzer until depth = do
   env <- ask
 
   let pair = envPair env
       interval = envInterval env
       logger = envLog env
 
-  -- Get path to store fetched and computed data
-  klinesDP <- getKlinesDumpPath
-  klinesAnalysisDP <- getKlinesAnalysisDumpPath
-
   -- Read current candles from the store
+  klinesDP <- getKlinesDumpPath
   stored <- liftIO $ loadKlines klinesDP
   -- Get klines from the API
   resp <- getKlines depth until
@@ -45,13 +42,8 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
            in (merged, getTAAnalysis fetched', getLastDate fetched')
   liftIO $ logger "Performed analysis of klines"
 
-  -- Dump data to store
-  liftIO $ dumpData klinesDP updatedKlines
-  if dumpAnalysis then liftIO $ dumpData klinesAnalysisDP analysis else pure ()
-  liftIO $ logger "Dump logs on disk"
-
   -- Return last fetched candle
-  pure lastCandleDate
+  pure (lastCandleDate, updatedKlines, analysis)
   where
     merge set1 set2 =
       Klines $
@@ -82,12 +74,25 @@ waitDelay delay = do
   liftIO $ envLog env $ "Waiting " <> delayStr delay <> "s for next iteration ..."
   liftIO $ threadDelay (1000000 * delay)
 
+dumpDatas :: Klines -> Analysis -> Bool -> ReaderT Env IO ()
+dumpDatas updatedKlines analysis dumpAnalysis = do
+  env <- ask
+  -- Get path to store fetched and computed data
+  klinesDP <- getKlinesDumpPath
+  klinesAnalysisDP <- getKlinesAnalysisDumpPath
+  liftIO $ dumpData klinesDP updatedKlines
+  if dumpAnalysis
+    then liftIO $ dumpData klinesAnalysisDP analysis
+    else pure ()
+  liftIO $ envLog env "Dump logs on disk"
+
 liveRunner :: ReaderT Env IO ()
 liveRunner = do
   run
   where
     run = do
-      _ <- pairFetcherAndAnalyzer Nothing 600 True
+      (_, updatedKlines, analysis) <- pairFetcherAndAnalyzer Nothing 600
+      _ <- dumpDatas updatedKlines analysis True
       _ <- waitDelay 10
       run
 
@@ -99,7 +104,8 @@ historicalRunner startDate endDate = do
     run :: UTCTime -> ReaderT Env IO ()
     run date = do
       env <- ask
-      lastCandleDate <- pairFetcherAndAnalyzer (Just date) 1000 False
+      (lastCandleDate, updatedKlines, analysis) <- pairFetcherAndAnalyzer (Just date) 1000
+      _ <- dumpDatas updatedKlines analysis False
       if lastCandleDate <= endDate
         then liftIO $ envLog env ("Reached request end date. Stopping." :: String)
         else waitDelay 1
