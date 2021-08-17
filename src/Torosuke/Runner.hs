@@ -15,10 +15,10 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
   env <- ask
   let pair = envPair env
       interval = envInterval env
-      klinesDP = getKlinesDumpPath pair interval
-      klinesAnalysis = getKlinesAnalysisDumpPath pair interval
+  klinesDP <- getKlinesDumpPath
+  klinesAnalysisDP <- getKlinesAnalysisDumpPath
   stored <- liftIO $ loadKlines klinesDP
-  resp <- liftIO $ getKlines pair interval depth until
+  resp <- getKlines depth until
   let (KlinesHTTPResponse status _ fetchedM) = resp
   log pair interval depth status
   let (updatedKlines, analysis, lastCandleDate) = case (stored, fetchedM) of
@@ -29,7 +29,7 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
           let merged = merge stored' fetched'
            in (merged, getTAAnalysis fetched', getLastDate fetched')
   liftIO $ dumpData klinesDP updatedKlines
-  if dumpAnalysis then liftIO $ dumpData klinesAnalysis analysis else pure ()
+  if dumpAnalysis then liftIO $ dumpData klinesAnalysisDP analysis else pure ()
   pure lastCandleDate
   where
     merge set1 set2 =

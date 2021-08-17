@@ -1,5 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Torosuke.Binance where
 
+import Control.Monad.Reader
 import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withText)
 import Data.Aeson.Types (parseFail)
 import qualified Data.Scientific as S
@@ -85,28 +88,31 @@ parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
     conv :: Int -> String
     conv i = show (round (fromIntegral i / 1000 :: Float) :: Int)
 
-getKlinesURL :: Pair -> Interval -> Int -> Maybe UTCTime -> String
-getKlinesURL pair interval limit' endTM' =
+getKlinesURL :: MonadReader Env m => Int -> Maybe UTCTime -> m String
+getKlinesURL limit' endTM' = do
+  env <- ask
   let limit = show limit'
       endT = case endTM' of
         Just endT' -> "&endTime=" ++ formatTime defaultTimeLocale "%s" endT' ++ "000"
         Nothing -> ""
-   in "https://api.binance.com/api/v3/klines?symbol="
-        ++ pairToText pair
-        ++ "&interval="
-        ++ intervalToText interval
-        ++ "&limit="
-        ++ limit
-        ++ endT
+   in pure $
+        "https://api.binance.com/api/v3/klines?symbol="
+          ++ pairToText (envPair env)
+          ++ "&interval="
+          ++ intervalToText (envInterval env)
+          ++ "&limit="
+          ++ limit
+          ++ endT
 
 adate :: UTCTime
 adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
 
-getKlines :: Pair -> Interval -> Int -> Maybe UTCTime -> IO KlinesHTTPResponse
-getKlines pair interval limit endTM = do
-  manager <- newManager tlsManagerSettings
-  request <- parseRequest $ getKlinesURL pair interval limit endTM
-  response <- httpLbs request manager
+getKlines :: Int -> Maybe UTCTime -> ReaderT Env IO KlinesHTTPResponse
+getKlines limit endTM = do
+  manager <- liftIO $ newManager tlsManagerSettings
+  url <- getKlinesURL limit endTM
+  request <- parseRequest url
+  response <- liftIO $ httpLbs request manager
   let decoded = decode $ responseBody response :: Maybe BiKlines
   pure $
     KlinesHTTPResponse
