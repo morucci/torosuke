@@ -2,7 +2,6 @@ module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.Reader
-import qualified Data.HashMap.Strict as HM
 import Data.Time.Clock
 import Relude
 import Torosuke.Binance
