@@ -6,6 +6,7 @@
 
 module Main where
 
+import Control.Monad.Reader
 import Data.Time.Clock
 import Options.Generic
 import Relude
@@ -38,8 +39,10 @@ main = do
   where
     go :: TorosukeHistoCli Unwrapped -> IO ()
     go args = do
-      historicalRunner
-        (Pair $ pair args)
-        (textToInterval $ interval args)
-        (parseDate $ start args)
-        (parseDate $ end args)
+      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args)
+      runReaderT
+        ( historicalRunner
+            (parseDate $ start args)
+            (parseDate $ end args)
+        )
+        appEnv

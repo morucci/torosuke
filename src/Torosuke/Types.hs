@@ -8,6 +8,11 @@ import Network.HTTP.Types
 import Relude
 import Prelude (head)
 
+data Env = Env
+  { envPair :: Pair,
+    envInterval :: Interval
+  }
+
 data Kline = Kline
   { openT :: UTCTime,
     open :: Double,

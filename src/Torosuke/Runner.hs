@@ -10,11 +10,6 @@ import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
 
-data Env = Env
-  { envPair :: Pair,
-    envInterval :: Interval
-  }
-
 pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> Bool -> ReaderT Env IO UTCTime
 pairFetcherAndAnalyzer until depth dumpAnalysis = do
   env <- ask
@@ -61,37 +56,35 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
 delayStr :: Show a => a -> String
 delayStr delay = toString (show delay :: String)
 
-liveRunner :: Pair -> Interval -> IO ()
-liveRunner pair interval = do
-  let runEnv = Env pair interval
-  run runEnv
+liveRunner :: ReaderT Env IO ()
+liveRunner = do
+  run
   where
-    run runEnv' = do
-      _ <- runReaderT (pairFetcherAndAnalyzer Nothing 600 True) runEnv'
+    run = do
+      _ <- pairFetcherAndAnalyzer Nothing 600 True
       _ <- wait
-      run runEnv'
+      run
     wait = do
       print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
-      threadDelay (1000000 * delay)
+      liftIO $ threadDelay (1000000 * delay)
     delay :: Int
     delay = 10
 
-historicalRunner :: Pair -> Interval -> UTCTime -> UTCTime -> IO ()
-historicalRunner pair interval startDate endDate = do
-  let runEnv = Env pair interval
-  _ <- run startDate runEnv
+historicalRunner :: UTCTime -> UTCTime -> ReaderT Env IO ()
+historicalRunner startDate endDate = do
+  _ <- run startDate
   pure ()
   where
-    run :: UTCTime -> Env -> IO ()
-    run date runEnv' = do
-      lastCandleDate <- runReaderT (pairFetcherAndAnalyzer (Just date) 1000 False) runEnv'
+    run :: UTCTime -> ReaderT Env IO ()
+    run date = do
+      lastCandleDate <- pairFetcherAndAnalyzer (Just date) 1000 False
       if lastCandleDate <= endDate
         then do
           print ("Reached request end date. Stopping." :: String)
           pure ()
         else do
           print $ "Waiting " <> delayStr delay <> "s for next iteration ..."
-          threadDelay (1000000 * delay)
-          run lastCandleDate runEnv'
+          liftIO $ threadDelay (1000000 * delay)
+          run lastCandleDate
     delay :: Int
     delay = 1

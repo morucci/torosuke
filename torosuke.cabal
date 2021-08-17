@@ -74,6 +74,7 @@ executable torosuke-live-crawler
                      , torosuke
                      , relude                     > 1.0.0.0
                      , optparse-generic           < 1.5
+                     , mtl                        < 2.2.3
 
 executable torosuke-histo-crawler
   import:              common-options
@@ -84,3 +85,4 @@ executable torosuke-histo-crawler
                      , relude                     > 1.0.0.0
                      , optparse-generic           < 1.5
                      , time                       < 1.10
+                     , mtl                        < 2.2.3
