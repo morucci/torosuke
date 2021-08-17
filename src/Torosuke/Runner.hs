@@ -76,20 +76,20 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
 delayStr :: Show a => a -> String
 delayStr delay = toString (show delay :: String)
 
+waitDelay :: Int -> ReaderT Env IO ()
+waitDelay delay = do
+  env <- ask
+  liftIO $ envLog env $ "Waiting " <> delayStr delay <> "s for next iteration ..."
+  liftIO $ threadDelay (1000000 * delay)
+
 liveRunner :: ReaderT Env IO ()
 liveRunner = do
   run
   where
     run = do
       _ <- pairFetcherAndAnalyzer Nothing 600 True
-      _ <- wait
+      _ <- waitDelay 10
       run
-    wait = do
-      env <- ask
-      liftIO $ envLog env $ "Waiting " <> delayStr delay <> "s for next iteration ..."
-      liftIO $ threadDelay (1000000 * delay)
-    delay :: Int
-    delay = 10
 
 historicalRunner :: UTCTime -> UTCTime -> ReaderT Env IO ()
 historicalRunner startDate endDate = do
@@ -101,11 +101,5 @@ historicalRunner startDate endDate = do
       env <- ask
       lastCandleDate <- pairFetcherAndAnalyzer (Just date) 1000 False
       if lastCandleDate <= endDate
-        then do
-          liftIO $ envLog env ("Reached request end date. Stopping." :: String)
-        else do
-          liftIO $ envLog env $ "Waiting " <> delayStr delay <> "s for next iteration ..."
-          liftIO $ threadDelay (1000000 * delay)
-          run lastCandleDate
-    delay :: Int
-    delay = 1
+        then liftIO $ envLog env ("Reached request end date. Stopping." :: String)
+        else waitDelay 1
