@@ -16,16 +16,26 @@ toroLogger = print
 pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> Bool -> ReaderT Env IO UTCTime
 pairFetcherAndAnalyzer until depth dumpAnalysis = do
   env <- ask
+
   let pair = envPair env
       interval = envInterval env
       logger = envLog env
+
+  -- Get path to store fetched and computed data
   klinesDP <- getKlinesDumpPath
   klinesAnalysisDP <- getKlinesAnalysisDumpPath
+
+  -- Read current candles from the store
   stored <- liftIO $ loadKlines klinesDP
+  -- Get klines from the API
   resp <- getKlines depth until
+
   let (KlinesHTTPResponse status _ fetchedM) = resp
       toLog = getLogLine pair interval depth status
+
   liftIO $ logger toLog
+
+  -- Check status and merge candle and/or compute analysis according to status
   let (updatedKlines, analysis, lastCandleDate) = case (stored, fetchedM) of
         (Nothing, Nothing) -> error "Unable to decode dump and to fetch from API"
         (Just _, Nothing) -> error "Unable to fetch from API"
@@ -34,9 +44,13 @@ pairFetcherAndAnalyzer until depth dumpAnalysis = do
           let merged = merge stored' fetched'
            in (merged, getTAAnalysis fetched', getLastDate fetched')
   liftIO $ logger "Performed analysis of klines"
+
+  -- Dump data to store
   liftIO $ dumpData klinesDP updatedKlines
   if dumpAnalysis then liftIO $ dumpData klinesAnalysisDP analysis else pure ()
   liftIO $ logger "Dump logs on disk"
+
+  -- Return last fetched candle
   pure lastCandleDate
   where
     merge set1 set2 =
