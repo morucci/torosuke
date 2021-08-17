@@ -103,3 +103,15 @@ historicalRunner startDate endDate = do
       if lastCandleDate <= endDate
         then liftIO $ envLog env ("Reached request end date. Stopping." :: String)
         else waitDelay 1
+
+displayStoredKlines :: ReaderT Env IO ()
+displayStoredKlines = do
+  klinesDP <- getKlinesDumpPath
+  storedM <- liftIO $ loadKlines klinesDP
+  case storedM of
+    Just kls -> liftIO $ run kls
+    Nothing -> error $ "Unable to read klines from " <> show klinesDP
+  where
+    run Klines {..} = mapM_ printer kGet
+    printer :: Kline -> IO ()
+    printer kline = print (show kline :: Text)
