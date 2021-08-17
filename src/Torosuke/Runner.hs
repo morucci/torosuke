@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)
@@ -8,6 +10,7 @@ import Torosuke.Binance
 import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
+import Prelude (head)
 
 toroLogger :: String -> IO ()
 toroLogger = print
@@ -104,14 +107,39 @@ historicalRunner startDate endDate = do
         then liftIO $ envLog env ("Reached request end date. Stopping." :: String)
         else waitDelay 1
 
-displayStoredKlines :: ReaderT Env IO ()
-displayStoredKlines = do
+loadStoredKlines :: (MonadIO m, MonadReader Env m) => m Klines
+loadStoredKlines = do
   klinesDP <- getKlinesDumpPath
   storedM <- liftIO $ loadKlines klinesDP
   case storedM of
-    Just kls -> liftIO $ run kls
+    Just kls -> pure kls
     Nothing -> error $ "Unable to read klines from " <> show klinesDP
+
+displayStoredKlines :: ReaderT Env IO ()
+displayStoredKlines = do
+  klines <- loadStoredKlines
+  liftIO $ traverse_ printer $ kGet klines
   where
-    run Klines {..} = mapM_ printer kGet
     printer :: Kline -> IO ()
     printer kline = print (show kline :: Text)
+
+runAnalysisOnStoredKlines :: ReaderT Env IO ()
+runAnalysisOnStoredKlines = do
+  klines' <- loadStoredKlines
+  let klines = kGet klines'
+      depth = 100
+      offset = length klines - depth
+  liftIO $ run offset klines
+  where
+    run :: Int -> [Kline] -> IO ()
+    run offset klines = do
+      let series = Klines $ slice klines offset (length klines)
+      print $ "Run analysis for series starting with " <> (show (Prelude.head $ kGet series) :: Text)
+      let analysis = getTAAnalysis series
+      _ <- dumpAnalisys analysis
+      let newOffset = offset -1
+      if newOffset > 0 then run newOffset klines else pure ()
+    dumpAnalisys _ = do
+      -- TODO
+      pure ()
+    slice l i k = drop i $ take k l
