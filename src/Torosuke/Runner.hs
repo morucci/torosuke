@@ -73,22 +73,20 @@ waitDelay delay = do
 
 dumpDatas :: Klines -> Analysis -> Bool -> ReaderT Env IO ()
 dumpDatas updatedKlines analysis dumpAnalysis = do
-  env <- ask
   -- Get path to store fetched and computed data
   klinesDP <- getKlinesDumpPath
-  klinesAnalysisDP <- getKlinesAnalysisDumpPath
-  liftIO $ dumpData klinesDP updatedKlines
+  klinesAnalysisDP <- getKlinesAnalysisDumpPath Nothing
+  dumpData klinesDP updatedKlines
   if dumpAnalysis
-    then liftIO $ dumpData klinesAnalysisDP analysis
+    then dumpData klinesAnalysisDP analysis
     else pure ()
-  liftIO $ envLog env "Dump logs on disk"
 
 liveRunner :: ReaderT Env IO ()
 liveRunner = do
   run
   where
     run = do
-      (_, updatedKlines, analysis) <- pairFetcherAndAnalyzer Nothing 600
+      (_, updatedKlines, analysis) <- pairFetcherAndAnalyzer Nothing 100
       _ <- dumpDatas updatedKlines analysis True
       _ <- waitDelay 10
       run
@@ -105,7 +103,9 @@ historicalRunner startDate endDate = do
       _ <- dumpDatas updatedKlines analysis False
       if lastCandleDate <= endDate
         then liftIO $ envLog env ("Reached request end date. Stopping." :: String)
-        else waitDelay 1
+        else do
+          waitDelay 1
+          run lastCandleDate
 
 loadStoredKlines :: (MonadIO m, MonadReader Env m) => m Klines
 loadStoredKlines = do
@@ -127,19 +127,18 @@ runAnalysisOnStoredKlines :: ReaderT Env IO ()
 runAnalysisOnStoredKlines = do
   klines' <- loadStoredKlines
   let klines = kGet klines'
-      depth = 100
-      offset = length klines - depth
-  liftIO $ run offset klines
+  liftIO $ print $ "Processing " <> show (length klines) <> (" candles" :: Text)
+  run 0 klines
   where
-    run :: Int -> [Kline] -> IO ()
+    run :: Int -> [Kline] -> ReaderT Env IO ()
     run offset klines = do
-      let series = Klines $ slice klines offset (length klines)
-      print $ "Run analysis for series starting with " <> (show (Prelude.head $ kGet series) :: Text)
+      let series = Klines $ slice klines (length klines - depth - offset) (length klines - offset)
+          firstKline = Prelude.head $ kGet series
       let analysis = getTAAnalysis series
-      _ <- dumpAnalisys analysis
-      let newOffset = offset -1
-      if newOffset > 0 then run newOffset klines else pure ()
-    dumpAnalisys _ = do
-      -- TODO
+      analysisStepDP <- getKlinesAnalysisDumpPath $ Just $ closeT firstKline
+      dumpData analysisStepDP analysis
+      let newOffset = offset + 1
+      if newOffset <= length klines - depth then run newOffset klines else pure ()
       pure ()
     slice l i k = drop i $ take k l
+    depth = 100

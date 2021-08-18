@@ -93,12 +93,15 @@ getTAAnalysis :: Klines -> Analysis
 getTAAnalysis kls =
   let closePrice = getCloseP kls
       aKlines = kls
-      aMacd = macd_12_26_9 closePrice
+      aMacd =
+        let macd' = macd_12_26_9 closePrice
+         in -- Limit to 10 values in the report
+            Macd (take 10 $ macdLine macd') (take 10 $ signalLine macd')
       aMacdAnalisys =
         MacdAnalysis
           (crossSignal aMacd)
           (signalLineAboveZero aMacd)
           (macdLineAboveZero aMacd)
           (macdLineAboveSignal aMacd)
-      aDate = reverse $ getCloseT kls
+      aDate = take 10 $ reverse $ getCloseT kls
    in Analysis {..}
