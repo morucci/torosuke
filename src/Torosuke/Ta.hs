@@ -94,7 +94,7 @@ crossSignal Macd {..} =
 getTAAnalysis :: Klines -> Analysis
 getTAAnalysis kls =
   let closePrice = getCloseP kls
-      aKlines = kls
+      aKlines = Klines $ reverse $ take depth $ reverse $ kGet kls
       aMacd =
         let macd' = macd_12_26_9 closePrice
          in -- Limit to 10 values in the report
