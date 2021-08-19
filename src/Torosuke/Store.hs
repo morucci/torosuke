@@ -5,8 +5,6 @@ module Torosuke.Store where
 import Control.Monad.Reader
 import Data.Aeson (ToJSON, decode, encode)
 import qualified Data.Text as T
-import Data.Time.Clock
-import Data.Time.Format (defaultTimeLocale, formatTime)
 import Relude
 import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
 import Torosuke.Types
@@ -30,10 +28,11 @@ getDumpPath' tname = do
 getKlinesDumpPath :: MonadReader Env m => m DumpPath
 getKlinesDumpPath = getDumpPath' ""
 
-getKlinesAnalysisDumpPath :: MonadReader Env m => Maybe UTCTime -> m DumpPath
-getKlinesAnalysisDumpPath timeM = getDumpPath' $ case timeM of
-  Nothing -> "analysis"
-  Just time -> toText $ "analisys_step_" <> formatTime defaultTimeLocale "%s" time
+getKlinesAnalysisDumpPath :: MonadReader Env m => m DumpPath
+getKlinesAnalysisDumpPath = getDumpPath' "analysis"
+
+getKlinesHistoAnalysisDumpPath :: MonadReader Env m => m DumpPath
+getKlinesHistoAnalysisDumpPath = getDumpPath' "analysis_histo"
 
 instance Show DumpPath where
   show dpath = dpDir dpath <> "/" <> dpName dpath

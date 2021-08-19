@@ -5,6 +5,7 @@ import Data.List ((!!))
 import Data.Time.Clock
 import Relude
 import Torosuke.Types
+import Prelude (head)
 
 data Macd = Macd {macdLine :: [Double], signalLine :: [Double]} deriving (Show, Generic)
 
@@ -28,7 +29,8 @@ data Analysis = Analysis
   { aKlines :: Klines,
     aMacd :: Macd,
     aMacdAnalisys :: MacdAnalysis,
-    aDate :: [UTCTime]
+    aDate :: [UTCTime],
+    closeT :: UTCTime
   }
   deriving (Show, Generic)
 
@@ -104,4 +106,5 @@ getTAAnalysis kls =
           (macdLineAboveZero aMacd)
           (macdLineAboveSignal aMacd)
       aDate = take 10 $ reverse $ getCloseT kls
+      closeT = Prelude.head aDate
    in Analysis {..}

@@ -10,7 +10,6 @@ import Torosuke.Binance
 import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
-import Prelude (head)
 
 toroLogger :: String -> IO ()
 toroLogger = print
@@ -75,7 +74,7 @@ dumpDatas :: Klines -> Analysis -> Bool -> ReaderT Env IO ()
 dumpDatas updatedKlines analysis dumpAnalysis = do
   -- Get path to store fetched and computed data
   klinesDP <- getKlinesDumpPath
-  klinesAnalysisDP <- getKlinesAnalysisDumpPath Nothing
+  klinesAnalysisDP <- getKlinesAnalysisDumpPath
   dumpData klinesDP updatedKlines
   if dumpAnalysis
     then dumpData klinesAnalysisDP analysis
@@ -127,18 +126,17 @@ runAnalysisOnStoredKlines :: ReaderT Env IO ()
 runAnalysisOnStoredKlines = do
   klines' <- loadStoredKlines
   let klines = kGet klines'
-  liftIO $ print $ "Processing " <> show (length klines) <> (" candles" :: Text)
-  run 0 klines
+  liftIO $ print $ "Processing " <> show (length klines) <> (" candles ... (this may take a while)" :: Text)
+  analysisStepDP <- getKlinesHistoAnalysisDumpPath
+  analisys <- run (-1) klines []
+  dumpData analysisStepDP analisys
   where
-    run :: Int -> [Kline] -> ReaderT Env IO ()
-    run offset klines = do
-      let series = Klines $ slice klines (length klines - depth - offset) (length klines - offset)
-          firstKline = Prelude.head $ kGet series
-      let analysis = getTAAnalysis series
-      analysisStepDP <- getKlinesAnalysisDumpPath $ Just $ closeT firstKline
-      dumpData analysisStepDP analysis
+    run :: Int -> [Kline] -> [Analysis] -> ReaderT Env IO [Analysis]
+    run offset klines acc = do
       let newOffset = offset + 1
-      if newOffset <= length klines - depth then run newOffset klines else pure ()
-      pure ()
+          series = Klines $ slice klines (length klines - depth - offset) (length klines - offset)
+      if newOffset <= length klines - depth
+        then run newOffset klines $ getTAAnalysis series : acc
+        else pure acc
     slice l i k = drop i $ take k l
     depth = 100
