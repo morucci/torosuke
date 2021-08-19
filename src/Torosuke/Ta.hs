@@ -98,13 +98,15 @@ getTAAnalysis kls =
       aMacd =
         let macd' = macd_12_26_9 closePrice
          in -- Limit to 10 values in the report
-            Macd (take 10 $ macdLine macd') (take 10 $ signalLine macd')
+            Macd (take depth $ macdLine macd') (take depth $ signalLine macd')
       aMacdAnalisys =
         MacdAnalysis
           (crossSignal aMacd)
           (signalLineAboveZero aMacd)
           (macdLineAboveZero aMacd)
           (macdLineAboveSignal aMacd)
-      aDate = take 10 $ reverse $ getCloseT kls
+      aDate = take depth $ reverse $ getCloseT kls
       closeT = Prelude.head aDate
    in Analysis {..}
+  where
+    depth = 5
