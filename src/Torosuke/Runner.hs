@@ -122,8 +122,8 @@ displayStoredKlines = do
     printer :: Kline -> IO ()
     printer kline = print (show kline :: Text)
 
-runAnalysisOnStoredKlines :: ReaderT Env IO ()
-runAnalysisOnStoredKlines = do
+analysisOnStoredKlines :: ReaderT Env IO ()
+analysisOnStoredKlines = do
   klines' <- loadStoredKlines
   let klines = kGet klines'
   liftIO $ print $ "Processing " <> show (length klines) <> (" candles ... (this may take a while)" :: Text)

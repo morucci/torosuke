@@ -86,3 +86,14 @@ executable torosuke-histo-crawler
                      , optparse-generic           < 1.5
                      , time                       < 1.10
                      , mtl                        < 2.2.3
+
+executable torosuke-histo-analyst
+  import:              common-options
+  hs-source-dirs:      app
+  main-is:             histo-analyst.hs
+  build-depends:       base
+                     , torosuke
+                     , relude                     > 1.0.0.0
+                     , optparse-generic           < 1.5
+                     , time                       < 1.10
+                     , mtl                        < 2.2.3
