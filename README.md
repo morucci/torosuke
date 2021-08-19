@@ -8,6 +8,7 @@ There are two running modes:
 
 - Live runner: Constantly fetch last candles and perform the analysis.
 - Histo runner: Retreive historical candles for a given pair.
+- Histo analyst: run historical analysis on historical candle.
 
 Torosuke stores fetched data and analysis in the `$pwd/store` directory.
 
@@ -21,6 +22,12 @@ $ cabal run torosuke-live-crawler -- --pair ADAUSDT --interval 1h
 
 ```ShellSession
 $ cabal run torosuke-histo-crawler -- --pair ADAUSDT --interval 1h --start '2020-01-01 00:00:00 Z' --end '2019-01-01 00:00:00 Z'
+```
+
+## Histo analyst
+
+```ShellSession
+$ cabal run torosuke-histo-analyst -- --pair ADAUSDT --interval 1h
 ```
 
 ## Store
