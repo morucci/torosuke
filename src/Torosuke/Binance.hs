@@ -107,9 +107,6 @@ getKlinesURL limit' endTM' = do
           ++ limit
           ++ endT
 
-adate :: UTCTime
-adate = fromMaybe (error "nop") (readMaybe "2020-01-01 00:00:00 Z" :: Maybe UTCTime)
-
 getKlines :: Int -> Maybe UTCTime -> ReaderT Env IO KlinesHTTPResponse
 getKlines limit endTM = do
   manager <- liftIO $ newManager tlsManagerSettings
