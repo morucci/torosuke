@@ -128,15 +128,15 @@ analysisOnStoredKlines = do
   let klines = kGet klines'
   liftIO $ print $ "Processing " <> show (length klines) <> (" candles ... (this may take a while)" :: Text)
   analysisStepDP <- getKlinesHistoAnalysisDumpPath
-  analisys <- run (-1) klines []
+  analisys <- run (-1) klines $ Analysises []
   dumpData analysisStepDP analisys
   where
-    run :: Int -> [Kline] -> [Analysis] -> ReaderT Env IO [Analysis]
+    run :: Int -> [Kline] -> Analysises -> ReaderT Env IO Analysises
     run offset klines acc = do
       let newOffset = offset + 1
           series = Klines $ slice klines (length klines - depth - offset) (length klines - offset)
       if newOffset <= length klines - depth
-        then run newOffset klines $ getTAAnalysis series : acc
+        then run newOffset klines $ addAnalysis acc $ getTAAnalysis series
         else pure acc
     slice l i k = drop i $ take k l
     depth = 100

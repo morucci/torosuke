@@ -30,13 +30,34 @@ data Analysis = Analysis
     aMacd :: Macd,
     aMacdAnalisys :: MacdAnalysis,
     aDate :: [UTCTime],
-    closeT :: UTCTime
+    aCloseT :: UTCTime
   }
   deriving (Show, Generic)
+
+cT :: Analysis -> UTCTime
+cT Analysis {..} = aCloseT
+
+addAnalysis :: Analysises -> Analysis -> Analysises
+addAnalysis (Analysises store) toAdd = Analysises $ toAdd : store
 
 instance ToJSON Analysis
 
 instance FromJSON Analysis
+
+newtype Analysises = Analysises
+  { unAnalysises :: [Analysis]
+  }
+  deriving (Show, Generic)
+
+instance FromJSON Analysises
+
+instance ToJSON Analysises
+
+instance Eq Analysis where
+  (==) a b = cT a == cT b
+
+instance Ord Analysis where
+  compare a b = compare (cT a) (cT b)
 
 _ema :: Int -> [Double] -> Double
 _ema period series = case series of
@@ -106,7 +127,7 @@ getTAAnalysis kls =
           (macdLineAboveZero aMacd)
           (macdLineAboveSignal aMacd)
       aDate = take depth $ reverse $ getCloseT kls
-      closeT = Prelude.head aDate
+      aCloseT = Prelude.head aDate
    in Analysis {..}
   where
     depth = 5
