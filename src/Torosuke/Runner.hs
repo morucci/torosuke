@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)

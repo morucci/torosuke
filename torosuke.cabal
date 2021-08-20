@@ -44,7 +44,8 @@ common common-options
                        NoImplicitPrelude,
                        OverloadedStrings,
                        RecordWildCards,
-                       DeriveGeneric
+                       DeriveGeneric,
+                       FlexibleContexts
 
 library
   import:              common-options

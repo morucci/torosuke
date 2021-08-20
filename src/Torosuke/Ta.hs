@@ -1,63 +1,9 @@
 module Torosuke.Ta where
 
-import Data.Aeson (FromJSON, ToJSON)
 import Data.List ((!!))
-import Data.Time.Clock
 import Relude
 import Torosuke.Types
 import Prelude (head)
-
-data Macd = Macd {macdLine :: [Double], signalLine :: [Double]} deriving (Show, Generic)
-
-instance ToJSON Macd
-
-instance FromJSON Macd
-
-data MacdAnalysis = MacdAnalysis
-  { maCS :: [Bool],
-    maSLAZ :: [Bool],
-    maMLAZ :: [Bool],
-    maMVASL :: [Bool]
-  }
-  deriving (Show, Generic)
-
-instance ToJSON MacdAnalysis
-
-instance FromJSON MacdAnalysis
-
-data Analysis = Analysis
-  { aKlines :: Klines,
-    aMacd :: Macd,
-    aMacdAnalisys :: MacdAnalysis,
-    aDate :: [UTCTime],
-    aCloseT :: UTCTime
-  }
-  deriving (Show, Generic)
-
-cT :: Analysis -> UTCTime
-cT Analysis {..} = aCloseT
-
-addAnalysis :: Analysises -> Analysis -> Analysises
-addAnalysis (Analysises store) toAdd = Analysises $ toAdd : store
-
-instance ToJSON Analysis
-
-instance FromJSON Analysis
-
-newtype Analysises = Analysises
-  { unAnalysises :: [Analysis]
-  }
-  deriving (Show, Generic)
-
-instance FromJSON Analysises
-
-instance ToJSON Analysises
-
-instance Eq Analysis where
-  (==) a b = cT a == cT b
-
-instance Ord Analysis where
-  compare a b = compare (cT a) (cT b)
 
 _ema :: Int -> [Double] -> Double
 _ema period series = case series of

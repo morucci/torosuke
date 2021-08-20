@@ -1,41 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Torosuke.Store where
 
-import Control.Monad.Reader
 import Data.Aeson (ToJSON, decode, encode)
-import qualified Data.Text as T
 import Relude
 import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
 import Torosuke.Types
-import qualified Prelude (show)
-
-data DumpPath = DumpPath {dpDir :: FilePath, dpName :: FilePath}
-
-getDumpPath' :: MonadReader Env m => Text -> m DumpPath
-getDumpPath' tname = do
-  env <- ask
-  let pair = envPair env
-      interval = envInterval env
-   in pure $
-        DumpPath
-          ( "store" <> "/" <> pairToText pair
-          )
-          (intervalToText interval <> getTname <> ".json")
-  where
-    getTname = if T.null tname then "" else "_" <> toString tname
-
-getKlinesDumpPath :: MonadReader Env m => m DumpPath
-getKlinesDumpPath = getDumpPath' ""
-
-getKlinesAnalysisDumpPath :: MonadReader Env m => m DumpPath
-getKlinesAnalysisDumpPath = getDumpPath' "analysis"
-
-getKlinesHistoAnalysisDumpPath :: MonadReader Env m => m DumpPath
-getKlinesHistoAnalysisDumpPath = getDumpPath' "analysis_histo"
-
-instance Show DumpPath where
-  show dpath = dpDir dpath <> "/" <> dpName dpath
 
 dumpData :: ToJSON a => DumpPath -> a -> ReaderT Env IO ()
 dumpData dpath kls = do

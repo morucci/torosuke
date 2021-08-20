@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Torosuke.Binance where
 
 import Control.Monad.Reader
