@@ -65,8 +65,20 @@ newtype KlinesHM = KlinesHM {unKlinesHM :: HM.HashMap Text Kline} deriving (Show
 getLast100Klines :: Klines -> Klines
 getLast100Klines Klines {..} = Klines $ reverse $ take 100 $ reverse $ sort kGet
 
+getLastKline :: [Kline] -> Kline
+getLastKline = Prelude.head . sort
+
 getLastDate :: Klines -> UTCTime
-getLastDate Klines {..} = closeT $ Prelude.head $ sort kGet
+getLastDate Klines {..} = closeT $ getLastKline kGet
+
+getLastClosePrice :: Klines -> Double
+getLastClosePrice Klines {..} = close $ getLastKline kGet
+
+getLastLowPrice :: Klines -> Double
+getLastLowPrice Klines {..} = low $ getLastKline kGet
+
+getLastHighPrice :: Klines -> Double
+getLastHighPrice Klines {..} = high $ getLastKline kGet
 
 mergeKlines :: Klines -> Klines -> Klines
 mergeKlines set1 set2 =
@@ -155,6 +167,9 @@ instance Eq Analysis where
 
 instance Ord Analysis where
   compare a b = compare (cT a) (cT b)
+
+sortAnalysises :: Analysises -> Analysises
+sortAnalysises (Analysises anls) = Analysises $ sort anls
 
 -- | Store datatype and functions
 data DumpPath = DumpPath {dpDir :: FilePath, dpName :: FilePath}
