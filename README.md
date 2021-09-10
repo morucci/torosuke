@@ -4,13 +4,13 @@ Torosuke is my Rabbit but also a Candle crawler for Binance.
 
 Torosuke retreives historical data for a given pair and computes a MACD analysis.
 
-There are two running modes:
+There are three running modes:
 
 - Live runner: Constantly fetch last candles and perform the analysis.
 - Histo runner: Retreive historical candles for a given pair.
 - Histo analyst: run historical analysis on historical candle.
 
-Torosuke stores fetched data and analysis in the `$pwd/store` directory.
+Torosuke stores fetched data and analysis in the `$cwd/store` directory.
 
 ## Live runner
 
