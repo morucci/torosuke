@@ -83,6 +83,9 @@ getLastLowPrice Klines {..} = low $ getLastKline kGet
 getLastHighPrice :: Klines -> Double
 getLastHighPrice Klines {..} = high $ getLastKline kGet
 
+dropCurrent :: Klines -> Klines
+dropCurrent Klines {..} = Klines $ reverse $ drop 1 $ reverse kGet
+
 mergeKlines :: Klines -> Klines -> Klines
 mergeKlines set1 set2 =
   Klines $

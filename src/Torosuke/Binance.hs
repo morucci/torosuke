@@ -79,9 +79,6 @@ instance FromJSON BiKline where
             Right i -> Just i
             Left _ -> Nothing
 
-dropCurrent :: BiKlines -> BiKlines
-dropCurrent (BiKlines bkls) = BiKlines $ reverse $ drop 2 $ reverse bkls
-
 parseDateValue :: Int -> Maybe UTCTime
 parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
   where
@@ -117,4 +114,4 @@ getKlines limit endTM = do
       (responseStatus response)
       (responseHeaders response)
       -- Do not bother with in progress candle
-      (toKlines . dropCurrent <$> decoded)
+      (toKlines <$> decoded)

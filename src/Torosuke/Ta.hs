@@ -59,8 +59,9 @@ crossSignal Macd {..} =
     check b1 b2 = not b1 == b2
 
 getTAAnalysis :: Klines -> Analysis
-getTAAnalysis kls =
-  let closePrice = getCloseP kls
+getTAAnalysis kls' =
+  let kls = dropCurrent kls'
+      closePrice = getCloseP kls
       aKlines = Klines $ reverse $ take depth $ reverse $ kGet kls
       aMacd =
         let macd' = macd_12_26_9 closePrice

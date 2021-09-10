@@ -37,7 +37,7 @@ pairFetcherAndAnalyzer until depth = do
         (Just _, Nothing) -> error "Unable to fetch from API"
         (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched', getLastDate fetched')
         (Just stored', Just fetched') ->
-          let merged = mergeKlines stored' fetched'
+          let merged = mergeKlines fetched' stored'
            in (merged, getTAAnalysis fetched', getLastDate fetched')
   liftIO $ logger "Performed analysis of klines"
 
