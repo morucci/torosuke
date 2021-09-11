@@ -37,10 +37,12 @@ $ cabal run torosuke-histo-analyst -- --pair ADAUSDT --interval 1h
 store/
 store/ADAUSDT
 store/ADAUSDT/1h_analysis.json
+store/ADAUSDT/1h_current.json
 store/ADAUSDT/1h.json
 ```
 
-For a given pair two files are created in the store:
+For a given pair three files are created in the store:
 
 - 1h.json is the list of candles retrieved.
+- 1h_current.json is the current (live) candle.
 - 1h_analysis.json contains the MACD analysis for the last 100 candles.

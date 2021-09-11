@@ -196,6 +196,9 @@ getDumpPath' tname = do
 getKlinesDumpPath :: MonadReader Env m => m DumpPath
 getKlinesDumpPath = getDumpPath' ""
 
+getCurrentKlineDumpPath :: MonadReader Env m => m DumpPath
+getCurrentKlineDumpPath = getDumpPath' "current"
+
 getKlinesAnalysisDumpPath :: MonadReader Env m => m DumpPath
 getKlinesAnalysisDumpPath = getDumpPath' "analysis"
 

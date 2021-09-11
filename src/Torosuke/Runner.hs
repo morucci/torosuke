@@ -8,6 +8,7 @@ import Torosuke.Binance
 import Torosuke.Store
 import Torosuke.Ta
 import Torosuke.Types
+import Prelude (head)
 
 toroLogger :: String -> IO ()
 toroLogger = print
@@ -73,7 +74,9 @@ dumpDatas updatedKlines analysis dumpAnalysis = do
   -- Get path to store fetched and computed data
   klinesDP <- getKlinesDumpPath
   klinesAnalysisDP <- getKlinesAnalysisDumpPath
+  klineCurrentDP <- getCurrentKlineDumpPath
   dumpData klinesDP updatedKlines
+  dumpData klineCurrentDP $ Prelude.head $ reverse $ kGet updatedKlines
   if dumpAnalysis
     then dumpData klinesAnalysisDP analysis
     else pure ()
