@@ -32,17 +32,17 @@ pairFetcherAndAnalyzer until depth = do
   liftIO $ logger toLog
 
   -- Check status and merge candle and/or compute analysis according to status
-  let (updatedKlines, analysis, lastCandleDate) = case (stored, fetchedM) of
+  let (updatedKlines, fetched) = case (stored, fetchedM) of
         (Nothing, Nothing) -> error "Unable to decode dump and to fetch from API"
         (Just _, Nothing) -> error "Unable to fetch from API"
-        (Nothing, Just fetched') -> (fetched', getTAAnalysis fetched', getLastDate fetched')
+        (Nothing, Just fetched') -> (fetched', fetched')
         (Just stored', Just fetched') ->
           let merged = mergeKlines fetched' stored'
-           in (merged, getTAAnalysis fetched', getLastDate fetched')
+           in (merged, fetched')
   liftIO $ logger "Performed analysis of klines"
 
   -- Return last fetched candle
-  pure (lastCandleDate, updatedKlines, analysis)
+  pure (getLastDate fetched, updatedKlines, getTAAnalysis fetched)
   where
     getLogLine pair' interval' depth' status =
       "Fetched "
