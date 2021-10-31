@@ -61,20 +61,25 @@ crossSignal Macd {..} =
 getTAAnalysis :: Klines -> Analysis
 getTAAnalysis kls' =
   let kls = dropCurrent kls'
-      closePrice = getCloseP kls
-      aKlines = Klines $ reverse $ take depth $ reverse $ kGet kls
-      aMacd =
-        let macd' = macd_12_26_9 closePrice
-         in -- Limit to 10 values in the report
+      closeDates = take depth $ reverse $ getCloseT kls
+      macd =
+        let macd' = macd_12_26_9 $ getCloseP kls
+         in -- Limit to depth values in the report
             Macd (take depth $ macdLine macd') (take depth $ signalLine macd')
-      aMacdAnalisys =
-        MacdAnalysis
-          (crossSignal aMacd)
-          (signalLineAboveZero aMacd)
-          (macdLineAboveZero aMacd)
-          (macdLineAboveSignal aMacd)
-      aDate = take depth $ reverse $ getCloseT kls
-      aCloseT = Prelude.head aDate
-   in Analysis {..}
+      analysis =
+        Analysis
+          { aKlines = Klines $ take depth $ reverse $ kGet kls,
+            aMacd = macd,
+            aMacdAnalisys =
+              MacdAnalysis
+                (crossSignal macd)
+                (signalLineAboveZero macd)
+                (macdLineAboveZero macd)
+                (macdLineAboveSignal macd),
+            aDate = closeDates,
+            aCloseT = Prelude.head closeDates
+          }
+   in --  in trace (show analysis) analysis
+      analysis
   where
     depth = 5

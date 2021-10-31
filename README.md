@@ -8,7 +8,7 @@ There are three running modes:
 
 - Live runner: Constantly fetch last candles and perform the analysis.
 - Histo runner: Retreive historical candles for a given pair.
-- Histo analyst: run historical analysis on historical candle.
+- Histo analyst: run historical analysis on historical candles.
 
 Torosuke stores fetched data and analysis in the `$cwd/store` directory.
 
