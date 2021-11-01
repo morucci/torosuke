@@ -6,7 +6,6 @@
 
 module Main where
 
-import Control.Monad.Reader
 import Options.Generic
 import Relude
 import Torosuke.Runner
@@ -29,6 +28,6 @@ main = do
   go args
   where
     go :: TorosukeLiveCli Unwrapped -> IO ()
-    go args = do
-      let appEnv = Env (Pair $ pair args) (textToInterval $ interval args) toroLogger
-      runReaderT liveRunner appEnv
+    go args =
+      multiLiveRunner
+        [(Pair $ pair args, textToInterval $ interval args)]
