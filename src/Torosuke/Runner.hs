@@ -2,6 +2,7 @@ module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.Reader
+import Control.Scheduler (Comp (..), scheduleWork, withScheduler_)
 import Data.Time.Clock
 import Relude
 import Torosuke.Binance
@@ -82,14 +83,14 @@ dumpDatas updatedKlines analysis dumpAnalysis = do
     else pure ()
 
 liveRunner :: ReaderT Env IO ()
-liveRunner = do
-  run
+liveRunner = withScheduler_ Seq $ \sched ->
+  scheduleWork sched task
   where
-    run = do
+    task = do
       (_, updatedKlines, analysis) <- pairFetcherAndAnalyzer Nothing 100
-      _ <- dumpDatas updatedKlines analysis True
-      _ <- waitDelay 10
-      run
+      void $ dumpDatas updatedKlines analysis True
+      void $ waitDelay 10
+      task
 
 historicalRunner :: UTCTime -> UTCTime -> ReaderT Env IO ()
 historicalRunner startDate endDate = do
