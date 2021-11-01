@@ -83,8 +83,10 @@ dumpDatas updatedKlines analysis dumpAnalysis = do
     else pure ()
 
 multiLiveRunner :: [(Pair, Interval)] -> IO ()
-multiLiveRunner = Sched.traverseConcurrently_ (Sched.ParN 0) task
+multiLiveRunner pairs = do
+  Sched.traverseConcurrently_ compStr task pairs
   where
+    compStr = Sched.ParN (fromInteger . toInteger $ length pairs)
     task :: (Pair, Interval) -> IO ()
     task tpl = runReaderT task' (toEnv tpl)
     toEnv (pair, interval) = Env pair interval toroLogger
