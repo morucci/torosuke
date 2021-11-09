@@ -62,12 +62,15 @@ library
                      , mtl                        < 2.2.3
                      , safe-exceptions            < 0.1.7.3
                      , scheduler
+                     , vty
+                     , brick                      < 0.65
   hs-source-dirs:      src
   exposed-modules:     Torosuke.Binance
                      , Torosuke.Types
                      , Torosuke.Store
                      , Torosuke.Ta
                      , Torosuke.Runner
+                     , Torosuke.Ui
 
 executable torosuke-live-crawler
   import:              common-options
