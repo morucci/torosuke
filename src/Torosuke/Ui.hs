@@ -5,13 +5,15 @@ import Brick.BChan
 import Control.Concurrent (forkIO, threadDelay)
 import qualified Graphics.Vty as V
 import Relude
+import Torosuke.Store (loadAllPairAnalysis)
+import Torosuke.Types (AnnotatedAnalysis)
 
 data Tick = Tick
 
 data Name = Viewport1 deriving (Eq, Ord, Show)
 
 data AppState = AppState
-  { items :: [Text],
+  { analysis :: [AnnotatedAnalysis],
     ticks :: Int
   }
 
@@ -26,7 +28,13 @@ app =
     }
 
 drawUI :: AppState -> [Widget Name]
-drawUI s = [viewport Viewport1 Vertical $ vBox $ str . toString <$> (items s <> [show $ s & ticks])]
+drawUI s =
+  [ viewport Viewport1 Vertical $
+      vBox $ analysisToWidget <$> analysis s
+  ]
+  where
+    analysisToWidget :: AnnotatedAnalysis -> Widget Name
+    analysisToWidget ana = str . fst $ fst ana
 
 handleEvent :: AppState -> BrickEvent Name Tick -> EventM Name (Next AppState)
 handleEvent s (VtyEvent (V.EvKey V.KEsc [])) = halt s
@@ -48,7 +56,8 @@ theMap = attrMap V.defAttr []
 
 main :: IO ()
 main = do
-  let initialState = AppState (["Hello", "Word", "!"] <> (replicate 20 "a")) 0
+  analysis <- loadAllPairAnalysis
+  let initialState = AppState analysis 0
       buildVty = V.mkVty V.defaultConfig
   chan <- newBChan 10
   initialVty <- buildVty

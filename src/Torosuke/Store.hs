@@ -49,7 +49,7 @@ loadPairAnalysis = do
   dumpPath <- getKlinesAnalysisDumpPath
   liftIO $ loadAnalysis dumpPath
 
-loadAllPairAnalysis :: (MonadIO m) => m [((String, String), Analysis)]
+loadAllPairAnalysis :: (MonadIO m) => m [AnnotatedAnalysis]
 loadAllPairAnalysis = do
   entries <- liftIO $ listDirectory storePath
   let envs = concatMap getEnvs entries
@@ -60,7 +60,7 @@ loadAllPairAnalysis = do
     getEnvs pairName =
       (\interval -> Env (Pair pairName) interval (const $ pure ()))
         <$> allInterval
-    getAnalysis :: MonadIO m => Env -> m (Maybe ((String, String), Analysis))
+    getAnalysis :: MonadIO m => Env -> m (Maybe AnnotatedAnalysis)
     getAnalysis env = do
       anaM <- runReaderT loadPairAnalysis env
       pure $

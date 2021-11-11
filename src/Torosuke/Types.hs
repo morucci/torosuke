@@ -152,6 +152,8 @@ data Analysis = Analysis
   }
   deriving (Show, Generic)
 
+type AnnotatedAnalysis = ((String, String), Analysis)
+
 cT :: Analysis -> UTCTime
 cT Analysis {..} = aCloseT
 
