@@ -1,9 +1,9 @@
 module Torosuke.Store where
 
 import Control.Exception.Safe
-import Data.Aeson (ToJSON, decode, encode)
+import Data.Aeson (FromJSON, ToJSON, decode, encode)
 import Relude
-import System.Directory (createDirectoryIfMissing, doesFileExist, renameFile)
+import System.Directory (createDirectoryIfMissing, doesFileExist, listDirectory, renameFile)
 import Torosuke.Types
 
 dumpData :: ToJSON a => DumpPath -> a -> ReaderT Env IO ()
@@ -26,8 +26,8 @@ getDataFromFile path = do
     Right content -> pure content
     Left _ -> pure ""
 
-loadKlines :: DumpPath -> IO (Maybe Klines)
-loadKlines dpath = do
+loadData :: FromJSON a => DumpPath -> IO (Maybe a)
+loadData dpath = do
   createDirectoryIfMissing True $ dpDir dpath
   exists <- doesFileExist $ show dpath
   if exists
@@ -37,3 +37,32 @@ loadKlines dpath = do
           pure $ decode $ encodeUtf8 content
       )
     else pure Nothing
+
+loadKlines :: DumpPath -> IO (Maybe Klines)
+loadKlines = loadData
+
+loadAnalysis :: DumpPath -> IO (Maybe Analysis)
+loadAnalysis = loadData
+
+loadPairAnalysis :: (MonadIO m, MonadReader Env m) => m (Maybe Analysis)
+loadPairAnalysis = do
+  dumpPath <- getKlinesAnalysisDumpPath
+  liftIO $ loadAnalysis dumpPath
+
+loadAllPairAnalysis :: (MonadIO m) => m [((String, String), Analysis)]
+loadAllPairAnalysis = do
+  entries <- liftIO $ listDirectory storePath
+  let envs = concatMap getEnvs entries
+  allAnalysis' <- traverse getAnalysis envs
+  pure $ catMaybes allAnalysis'
+  where
+    getEnvs :: String -> [Env]
+    getEnvs pairName =
+      (\interval -> Env (Pair pairName) interval (const $ pure ()))
+        <$> allInterval
+    getAnalysis :: MonadIO m => Env -> m (Maybe ((String, String), Analysis))
+    getAnalysis env = do
+      anaM <- runReaderT loadPairAnalysis env
+      pure $
+        (\ana -> ((pairToText $ envPair env, intervalToText $ envInterval env), ana))
+          <$> anaM

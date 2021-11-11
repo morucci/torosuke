@@ -14,7 +14,7 @@ import qualified Prelude (show)
 -- | App env
 newtype Pair = Pair {unPair :: String}
 
-data Interval = ONE_H | ONE_D | HALF_H
+data Interval = ONE_H | ONE_D | HALF_H deriving (Enum, Bounded, Show, Eq)
 
 data Env = Env
   { envPair :: Pair,
@@ -35,11 +35,14 @@ textToInterval = \case
   "1d" -> ONE_D
   _ -> error "Unsupported interval"
 
-intervalToText :: Interval -> [Char]
+intervalToText :: Interval -> String
 intervalToText = \case
   ONE_D -> "1d"
   ONE_H -> "1h"
   HALF_H -> "30m"
+
+allInterval :: [Interval]
+allInterval = [minBound ..]
 
 -- | Generic Kline
 data Kline = Kline
@@ -180,30 +183,33 @@ sortAnalysises (Analysises anls) = Analysises $ sort anls
 -- | Store datatype and functions
 data DumpPath = DumpPath {dpDir :: FilePath, dpName :: FilePath}
 
-getDumpPath' :: MonadReader Env m => Text -> m DumpPath
-getDumpPath' tname = do
+storePath :: String
+storePath = "store"
+
+getDumpPath :: MonadReader Env m => Text -> m DumpPath
+getDumpPath tname = do
   env <- ask
   let pair = envPair env
       interval = envInterval env
    in pure $
         DumpPath
-          ( "store" <> "/" <> pairToText pair
+          ( storePath <> "/" <> pairToText pair
           )
           (intervalToText interval <> getTname <> ".json")
   where
     getTname = if T.null tname then "" else "_" <> toString tname
 
 getKlinesDumpPath :: MonadReader Env m => m DumpPath
-getKlinesDumpPath = getDumpPath' ""
+getKlinesDumpPath = getDumpPath ""
 
 getCurrentKlineDumpPath :: MonadReader Env m => m DumpPath
-getCurrentKlineDumpPath = getDumpPath' "current"
+getCurrentKlineDumpPath = getDumpPath "current"
 
 getKlinesAnalysisDumpPath :: MonadReader Env m => m DumpPath
-getKlinesAnalysisDumpPath = getDumpPath' "analysis"
+getKlinesAnalysisDumpPath = getDumpPath "analysis"
 
 getKlinesHistoAnalysisDumpPath :: MonadReader Env m => m DumpPath
-getKlinesHistoAnalysisDumpPath = getDumpPath' "analysis_histo"
+getKlinesHistoAnalysisDumpPath = getDumpPath "analysis_histo"
 
 instance Show DumpPath where
   show dpath = dpDir dpath <> "/" <> dpName dpath
