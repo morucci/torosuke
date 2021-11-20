@@ -51,10 +51,20 @@ drawUI s =
         macdAnalysisToWidget :: MacdAnalysis -> [Widget Name]
         macdAnalysisToWidget macdA =
           [str "MLASL/"]
-            <> intersperse (str " ") (str . show <$> reverse (take 2 (maMVASL macdA)))
+            <> intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
             <> [str "\t"]
             <> [str "SLAZ/"]
-            <> intersperse (str " ") (str . show <$> reverse (take 2 (maSLAZ macdA)))
+            <> intersperse (str " ") (boolWidget <$> reverse (take 2 (maSLAZ macdA)))
+
+boolWidget :: Bool -> Widget Name
+boolWidget False = withAttr boolFalseAttr $ str "False"
+boolWidget True = withAttr boolTrueAttr $ str "True"
+
+boolTrueAttr :: AttrName
+boolTrueAttr = "boolTrueAttr"
+
+boolFalseAttr :: AttrName
+boolFalseAttr = "boolFalseAttr"
 
 handleEvent :: AppState -> BrickEvent Name Tick -> EventM Name (Next AppState)
 handleEvent s (VtyEvent (V.EvKey V.KEsc [])) = halt s
@@ -76,7 +86,12 @@ handleEvent s (AppEvent (Tick annotedAnalysis)) = do
 handleEvent s _ = continue s
 
 theMap :: AttrMap
-theMap = attrMap V.defAttr []
+theMap =
+  attrMap
+    V.defAttr
+    [ (boolFalseAttr, fg V.red),
+      (boolTrueAttr, fg V.green)
+    ]
 
 getInitialState :: MonadIO m => m AppState
 getInitialState = do
