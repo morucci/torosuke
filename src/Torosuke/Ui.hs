@@ -3,10 +3,11 @@ module Torosuke.Ui where
 import Brick
 import Brick.BChan
 import Control.Concurrent (forkIO, threadDelay)
+import Data.Time.Format
 import qualified Graphics.Vty as V
 import Relude
 import Torosuke.Store (loadAllPairAnalysis)
-import Torosuke.Types (AnnotatedAnalysis)
+import Torosuke.Types (Analysis (aCloseT, aMacdAnalisys), AnnotatedAnalysis, MacdAnalysis (maMVASL, maSLAZ))
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
@@ -34,7 +35,26 @@ drawUI s =
   ]
   where
     analysisToWidget :: AnnotatedAnalysis -> Widget Name
-    analysisToWidget ana = str . fst $ fst ana
+    analysisToWidget ana =
+      hBox $
+        [ str . fst $ fst ana,
+          str "/",
+          str . snd $ fst ana,
+          str "\t",
+          str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
+          str "\t"
+        ]
+          <> macdAnalysisToWidget
+            ( aMacdAnalisys $ snd ana
+            )
+      where
+        macdAnalysisToWidget :: MacdAnalysis -> [Widget Name]
+        macdAnalysisToWidget macdA =
+          [str "MLASL/"]
+            <> intersperse (str " ") (str . show <$> reverse (take 2 (maMVASL macdA)))
+            <> [str "\t"]
+            <> [str "SLAZ/"]
+            <> intersperse (str " ") (str . show <$> reverse (take 2 (maSLAZ macdA)))
 
 handleEvent :: AppState -> BrickEvent Name Tick -> EventM Name (Next AppState)
 handleEvent s (VtyEvent (V.EvKey V.KEsc [])) = halt s
