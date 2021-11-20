@@ -5,9 +5,10 @@ import Brick.BChan
 import Control.Concurrent (forkIO, threadDelay)
 import Data.Time.Format
 import qualified Graphics.Vty as V
+import Numeric
 import Relude
 import Torosuke.Store (loadAllPairAnalysis)
-import Torosuke.Types (Analysis (aCloseT, aMacdAnalisys), AnnotatedAnalysis, MacdAnalysis (maMVASL, maSLAZ))
+import Torosuke.Types (Analysis (aCloseT, aMacd, aMacdAnalisys), AnnotatedAnalysis, Macd (macdLine, signalLine), MacdAnalysis (maMVASL, maSLAZ))
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
@@ -17,6 +18,9 @@ data AppState = AppState
   { analysis :: [AnnotatedAnalysis],
     ticks :: Int
   }
+
+showFullPrecision :: Double -> String
+showFullPrecision x = showFFloat (Just 10) x ""
 
 app :: App AppState Tick Name
 app =
@@ -31,9 +35,22 @@ app =
 drawUI :: AppState -> [Widget Name]
 drawUI s =
   [ viewport Viewport1 Vertical $
-      vBox $ analysisToWidget <$> analysis s
+      vBox $ [header] <> (analysisToWidget <$> analysis s)
   ]
   where
+    header :: Widget Name
+    header =
+      hBox
+        [ str "Pair/Interval",
+          str "\t",
+          str "Last candle date",
+          str "\t",
+          str "MLASL (p-1, p)",
+          str "\t",
+          str "SLAZ (p-1, p)",
+          str "\t",
+          str "ML/SL Diff (p-1, p)"
+        ]
     analysisToWidget :: AnnotatedAnalysis -> Widget Name
     analysisToWidget ana =
       hBox $
@@ -44,17 +61,31 @@ drawUI s =
           str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
           str "\t"
         ]
-          <> macdAnalysisToWidget
-            ( aMacdAnalisys $ snd ana
-            )
+          <> ( macdAnalysisToWidget . aMacdAnalisys $
+                 snd ana
+             )
+          <> [ str "\t"
+             ]
+          <> ( macdToWidget . aMacd $
+                 snd ana
+             )
       where
         macdAnalysisToWidget :: MacdAnalysis -> [Widget Name]
         macdAnalysisToWidget macdA =
-          [str "MLASL/"]
-            <> intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
+          intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
             <> [str "\t"]
-            <> [str "SLAZ/"]
             <> intersperse (str " ") (boolWidget <$> reverse (take 2 (maSLAZ macdA)))
+        macdToWidget :: Macd -> [Widget Name]
+        macdToWidget macd = [str $ diffFullPrecision diff]
+          where
+            diff :: [Double]
+            diff =
+              uncurry (-)
+                <$> zip
+                  (reverse (take 2 (macdLine macd)))
+                  (reverse (take 2 (signalLine macd)))
+            diffFullPrecision :: [Double] -> String
+            diffFullPrecision ld = toString . unwords $ toText . showFullPrecision <$> ld
 
 boolWidget :: Bool -> Widget Name
 boolWidget False = withAttr boolFalseAttr $ str "False"
