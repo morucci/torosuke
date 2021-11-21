@@ -2,6 +2,7 @@ module Torosuke.Ui where
 
 import Brick
 import Brick.BChan
+import Brick.Widgets.Table (renderTable, table)
 import Control.Concurrent (forkIO, threadDelay)
 import Data.Time.Format
 import qualified Graphics.Vty as V
@@ -33,50 +34,39 @@ app =
     }
 
 drawUI :: AppState -> [Widget Name]
-drawUI s =
-  [ viewport Viewport1 Vertical $
-      vBox $ [header] <> (analysisToWidget <$> analysis s)
-  ]
+drawUI s = tableUi
   where
-    header :: Widget Name
-    header =
-      hBox
-        [ str "Pair/Interval",
-          str "\t",
-          str "Last candle date",
-          str "\t",
-          str "MLASL (p-1, p)",
-          str "\t",
-          str "SLAZ (p-1, p)",
-          str "\t",
-          str "ML/SL Diff (p-1, p)"
-        ]
-    analysisToWidget :: AnnotatedAnalysis -> Widget Name
-    analysisToWidget ana =
-      hBox $
-        [ str . fst $ fst ana,
-          str "/",
-          str . snd $ fst ana,
-          str "\t",
-          str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
-          str "\t"
-        ]
-          <> ( macdAnalysisToWidget . aMacdAnalisys $
-                 snd ana
-             )
-          <> [ str "\t"
-             ]
-          <> ( macdToWidget . aMacd $
-                 snd ana
-             )
+    tableUi =
+      [ viewport Viewport1 Vertical $
+          renderTable $ table $ [headerRow] <> dataRows
+      ]
       where
-        macdAnalysisToWidget :: MacdAnalysis -> [Widget Name]
-        macdAnalysisToWidget macdA =
-          intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
-            <> [str "\t"]
-            <> intersperse (str " ") (boolWidget <$> reverse (take 2 (maSLAZ macdA)))
-        macdToWidget :: Macd -> [Widget Name]
-        macdToWidget macd = [str $ diffFullPrecision diff]
+        headerRow :: [Widget Name]
+        headerRow =
+          [ str "Pair/Interval",
+            str "Last candle date",
+            str "MLASL (p-1, p)",
+            str "SLAZ (p-1, p)",
+            str "ML/SL Diff (p-1, p)"
+          ]
+        dataRows :: [[Widget Name]]
+        dataRows = analysisToRow <$> analysis s
+        analysisToRow :: AnnotatedAnalysis -> [Widget Name]
+        analysisToRow ana =
+          [ str $ fst (fst ana) <> "/" <> snd (fst ana),
+            str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
+            maMVASLToWidget . aMacdAnalisys $ snd ana,
+            maSLAZToWidget . aMacdAnalisys $ snd ana,
+            macdToWidget . aMacd $ snd ana
+          ]
+        maMVASLToWidget :: MacdAnalysis -> Widget Name
+        maMVASLToWidget macdA =
+          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
+        maSLAZToWidget :: MacdAnalysis -> Widget Name
+        maSLAZToWidget macdA =
+          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 2 (maSLAZ macdA)))
+        macdToWidget :: Macd -> Widget Name
+        macdToWidget macd = str $ diffFullPrecision diff
           where
             diff :: [Double]
             diff =
