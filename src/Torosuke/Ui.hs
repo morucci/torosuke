@@ -9,7 +9,15 @@ import qualified Graphics.Vty as V
 import Numeric
 import Relude
 import Torosuke.Store (loadAllPairAnalysis)
-import Torosuke.Types (Analysis (aCloseT, aMacd, aMacdAnalisys), AnnotatedAnalysis, Macd (macdLine, signalLine), MacdAnalysis (maMVASL, maSLAZ))
+import Torosuke.Types
+  ( Analysis (aCloseT, aKlines, aMacd, aMacdAnalisys),
+    AnnotatedAnalysis,
+    Kline (close),
+    Klines,
+    Macd (macdLine, signalLine),
+    MacdAnalysis (maMVASL, maSLAZ),
+    kGet,
+  )
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
@@ -20,8 +28,8 @@ data AppState = AppState
     ticks :: Int
   }
 
-showFullPrecision :: Double -> String
-showFullPrecision x = showFFloat (Just 10) x ""
+showFullPrecision :: Int -> Double -> String
+showFullPrecision p x = showFFloat (Just p) x ""
 
 app :: App AppState Tick Name
 app =
@@ -47,7 +55,8 @@ drawUI s = tableUi
             str "Last candle date",
             str "MLASL (p-1, p)",
             str "SLAZ (p-1, p)",
-            str "ML/SL Diff (p-1, p)"
+            str "ML/SL Diff (p-1, p)",
+            str "Close Price (p-1, p)"
           ]
         dataRows :: [[Widget Name]]
         dataRows = analysisToRow <$> analysis s
@@ -57,7 +66,8 @@ drawUI s = tableUi
             str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
             maMVASLToWidget . aMacdAnalisys $ snd ana,
             maSLAZToWidget . aMacdAnalisys $ snd ana,
-            macdToWidget . aMacd $ snd ana
+            macdToWidget . aMacd $ snd ana,
+            klinePriceToWidget . aKlines $ snd ana
           ]
         maMVASLToWidget :: MacdAnalysis -> Widget Name
         maMVASLToWidget macdA =
@@ -75,7 +85,10 @@ drawUI s = tableUi
                   (reverse (take 2 (macdLine macd)))
                   (reverse (take 2 (signalLine macd)))
             diffFullPrecision :: [Double] -> String
-            diffFullPrecision ld = toString . unwords $ toText . showFullPrecision <$> ld
+            diffFullPrecision ld = toString . unwords $ toText . showFullPrecision 10 <$> ld
+        klinePriceToWidget :: Klines -> Widget Name
+        klinePriceToWidget klines =
+          hBox $ intersperse (str " ") (str . showFullPrecision 8 . close <$> reverse (take 2 (kGet klines)))
 
 boolWidget :: Bool -> Widget Name
 boolWidget False = withAttr boolFalseAttr $ str "False"
