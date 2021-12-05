@@ -68,23 +68,11 @@ instance ToJSON Klines
 
 newtype KlinesHM = KlinesHM {unKlinesHM :: HM.HashMap Text Kline} deriving (Show, Generic)
 
-getLast100Klines :: Klines -> Klines
-getLast100Klines Klines {..} = Klines $ reverse $ take 100 $ reverse $ sort kGet
-
 getLastKline :: [Kline] -> Kline
 getLastKline = Prelude.head . sort
 
 getLastDate :: Klines -> UTCTime
 getLastDate Klines {..} = closeT $ getLastKline kGet
-
-getLastClosePrice :: Klines -> Double
-getLastClosePrice Klines {..} = close $ getLastKline kGet
-
-getLastLowPrice :: Klines -> Double
-getLastLowPrice Klines {..} = low $ getLastKline kGet
-
-getLastHighPrice :: Klines -> Double
-getLastHighPrice Klines {..} = high $ getLastKline kGet
 
 dropCurrent :: Klines -> Klines
 dropCurrent Klines {..} = Klines $ reverse $ drop 1 $ reverse kGet
