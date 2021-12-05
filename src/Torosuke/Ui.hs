@@ -12,13 +12,14 @@ import Torosuke.Store (loadAllPairAnalysis)
 import Torosuke.Types
   ( Analysis (aCloseT, aKlines, aMacd, aMacdAnalisys),
     AnnotatedAnalysis,
-    Kline (close),
+    Kline (close, volume),
     Klines,
     Macd (macdLine, signalLine),
     MacdAnalysis (maMVASL, maSLAZ),
     kGet,
   )
 import Witch
+import Prelude
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
@@ -54,10 +55,11 @@ drawUI s = tableUi
         headerRow =
           [ str "Pair/Interval",
             str "Last candle date",
-            str "MLASL (p-1, p)",
-            str "SLAZ (p-1, p)",
-            str "ML/SL Diff (p-1, p)",
-            str "Close Price (p-1, p)"
+            str "MLASL (p-2, p-1, p)",
+            str "SLAZ (p-2, p-1, p)",
+            str "ML-SL Diff (p-2, p-1, p)",
+            str "Volume (p-2, p-1, p)",
+            str "Close Price (p-2, p-1, p)"
           ]
         dataRows :: [[Widget Name]]
         dataRows = analysisToRow <$> analysis s
@@ -68,46 +70,62 @@ drawUI s = tableUi
             maMVASLToWidget . aMacdAnalisys $ snd ana,
             maSLAZToWidget . aMacdAnalisys $ snd ana,
             macdToWidget . aMacd $ snd ana,
+            klineVolumeToWidget . aKlines $ snd ana,
             klinePriceToWidget . aKlines $ snd ana
           ]
         maMVASLToWidget :: MacdAnalysis -> Widget Name
         maMVASLToWidget macdA =
-          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 2 (maMVASL macdA)))
+          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 3 (maMVASL macdA)))
         maSLAZToWidget :: MacdAnalysis -> Widget Name
         maSLAZToWidget macdA =
-          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 2 (maSLAZ macdA)))
+          hBox $ intersperse (str " ") (boolWidget <$> reverse (take 3 (maSLAZ macdA)))
         macdToWidget :: Macd -> Widget Name
-        macdToWidget macd = str $ diffFullPrecision diff
+        macdToWidget macd = dlToEnhancedWidget 8 diff
           where
             diff :: [Double]
             diff =
               uncurry (-)
                 <$> zip
-                  (reverse (take 2 (macdLine macd)))
-                  (reverse (take 2 (signalLine macd)))
-            diffFullPrecision :: [Double] -> String
-            diffFullPrecision ld = toString . unwords $ toText . showFullPrecision 10 <$> ld
+                  (reverse (take 4 (macdLine macd)))
+                  (reverse (take 4 (signalLine macd)))
+        klineVolumeToWidget :: Klines -> Widget Name
+        klineVolumeToWidget klines = dlToEnhancedWidget 0 vol
+          where
+            vol :: [Double]
+            vol = volume <$> reverse (take 4 (kGet klines))
         klinePriceToWidget :: Klines -> Widget Name
-        klinePriceToWidget klines =
-          hBox $ intersperse (str " ") (str . showFullPrecision 8 . close <$> reverse (take 2 (kGet klines)))
+        klinePriceToWidget klines = dlToEnhancedWidget 6 closeP
+          where
+            closeP :: [Double]
+            closeP = close <$> reverse (take 4 (kGet klines))
 
 data EVal = EVal
   { eVal :: Double,
     ePercent :: Double,
-    eHigher :: Bool
+    eHigher :: Bool,
+    eValShowPrecision :: Int
   }
 
 instance From EVal (Widget Name) where
   from EVal {..} =
     withAttr (if eHigher then greenAttr else redAttr) $
       hBox
-        [ str $ showFullPrecision 8 eVal,
-          str $ showFullPrecision 8 ePercent
+        [ str $ showFullPrecision eValShowPrecision eVal,
+          str $ "(" <> showFullPrecision 2 ePercent <> "%)"
         ]
 
--- ["1.2 (10%) <- green, 1.1 (-2%) <- red, 2.2 (100%) <- green"]
--- dlToEnhanced :: [Double] -> [EVal]
--- dlToEnhanced dls = _
+dlToEnhanced :: Int -> [Double] -> [EVal]
+dlToEnhanced showP dls = reverse . fst $ foldr reduce ([], 0) $ reverse dls
+  where
+    reduce :: Double -> ([EVal], Double) -> ([EVal], Double)
+    reduce val (evals, prev) = (EVal val percent higher showP : evals, val)
+      where
+        percent = if prev == 0 then 0 else abs $ 100 - (prev / val * 100.0)
+        higher = val >= prev
+
+dlToEnhancedWidget :: Int -> [Double] -> Widget Name
+dlToEnhancedWidget showP dls =
+  hBox $ intersperse (str " ") $ from <$> Prelude.tail (dlToEnhanced showP dls)
 
 boolWidget :: Bool -> Widget Name
 boolWidget False = withAttr redAttr $ str "False"
