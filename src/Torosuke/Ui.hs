@@ -18,6 +18,7 @@ import Torosuke.Types
     MacdAnalysis (maMVASL, maSLAZ),
     kGet,
   )
+import Witch
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
@@ -90,15 +91,33 @@ drawUI s = tableUi
         klinePriceToWidget klines =
           hBox $ intersperse (str " ") (str . showFullPrecision 8 . close <$> reverse (take 2 (kGet klines)))
 
+data EVal = EVal
+  { eVal :: Double,
+    ePercent :: Double,
+    eHigher :: Bool
+  }
+
+instance From EVal (Widget Name) where
+  from EVal {..} =
+    withAttr (if eHigher then greenAttr else redAttr) $
+      hBox
+        [ str $ showFullPrecision 8 eVal,
+          str $ showFullPrecision 8 ePercent
+        ]
+
+-- ["1.2 (10%) <- green, 1.1 (-2%) <- red, 2.2 (100%) <- green"]
+-- dlToEnhanced :: [Double] -> [EVal]
+-- dlToEnhanced dls = _
+
 boolWidget :: Bool -> Widget Name
-boolWidget False = withAttr boolFalseAttr $ str "False"
-boolWidget True = withAttr boolTrueAttr $ str "True"
+boolWidget False = withAttr redAttr $ str "False"
+boolWidget True = withAttr greenAttr $ str "True"
 
-boolTrueAttr :: AttrName
-boolTrueAttr = "boolTrueAttr"
+greenAttr :: AttrName
+greenAttr = "greenAttr"
 
-boolFalseAttr :: AttrName
-boolFalseAttr = "boolFalseAttr"
+redAttr :: AttrName
+redAttr = "redAttr"
 
 handleEvent :: AppState -> BrickEvent Name Tick -> EventM Name (Next AppState)
 handleEvent s (VtyEvent (V.EvKey V.KEsc [])) = halt s
@@ -123,8 +142,8 @@ theMap :: AttrMap
 theMap =
   attrMap
     V.defAttr
-    [ (boolFalseAttr, fg V.red),
-      (boolTrueAttr, fg V.green)
+    [ (redAttr, fg V.red),
+      (greenAttr, fg V.green)
     ]
 
 getInitialState :: MonadIO m => m AppState

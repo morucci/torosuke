@@ -23,11 +23,6 @@ common common-options
                        -Widentities
                        -Wincomplete-uni-patterns
                        -Wincomplete-record-updates
-                       -Wno-missing-pattern-synonym-signatures
-                       --write-ghc-environment-files=always
-                       -- Enable stan integration
-                       -fwrite-ide-info
-                       -hiedir=.hie
   if impl(ghc >= 8.0)
     ghc-options:       -Wredundant-constraints
   if impl(ghc >= 8.2)
@@ -45,7 +40,9 @@ common common-options
                        OverloadedStrings,
                        RecordWildCards,
                        DeriveGeneric,
-                       FlexibleContexts
+                       FlexibleContexts,
+                       FlexibleInstances,
+                       MultiParamTypeClasses
 
 library
   import:              common-options
@@ -64,6 +61,7 @@ library
                      , scheduler
                      , vty
                      , brick                      < 0.65
+                     , witch                      < 0.3.5.0
   hs-source-dirs:      src
   exposed-modules:     Torosuke.Binance
                      , Torosuke.Types
