@@ -11,7 +11,7 @@ import Relude
 import Torosuke.Store (loadAllPairAnalysis)
 import Torosuke.Types
   ( Analysis (aCloseT, aKlines, aMacd, aMacdAnalisys),
-    AnnotatedAnalysis,
+    AnnotatedAnalysis (unAnnotatedAnalysis),
     Kline (close, volume),
     Klines,
     Macd (macdLine, signalLine),
@@ -62,9 +62,9 @@ drawUI s = tableUi
             str "Close Price (p-2, p-1, p)"
           ]
         dataRows :: [[Widget Name]]
-        dataRows = analysisToRow <$> analysis s
+        dataRows = analysisToRow <$> sort (analysis s)
         analysisToRow :: AnnotatedAnalysis -> [Widget Name]
-        analysisToRow ana =
+        analysisToRow ana' =
           [ str $ fst (fst ana) <> "/" <> snd (fst ana),
             str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
             maMVASLToWidget . aMacdAnalisys $ snd ana,
@@ -73,6 +73,8 @@ drawUI s = tableUi
             klineVolumeToWidget . aKlines $ snd ana,
             klinePriceToWidget . aKlines $ snd ana
           ]
+          where
+            ana = unAnnotatedAnalysis ana'
         maMVASLToWidget :: MacdAnalysis -> Widget Name
         maMVASLToWidget macdA =
           hBox $ intersperse (str " ") (boolWidget <$> reverse (take 3 (maMVASL macdA)))

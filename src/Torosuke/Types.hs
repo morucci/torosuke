@@ -140,7 +140,15 @@ data Analysis = Analysis
   }
   deriving (Show, Generic)
 
-type AnnotatedAnalysis = ((String, String), Analysis)
+newtype AnnotatedAnalysis = AnnotatedAnalysis
+  { unAnnotatedAnalysis :: ((String, String), Analysis)
+  }
+
+instance Eq AnnotatedAnalysis where
+  (==) a b = fst (unAnnotatedAnalysis a) == fst (unAnnotatedAnalysis b)
+
+instance Ord AnnotatedAnalysis where
+  (<=) a b = fst (unAnnotatedAnalysis a) <= fst (unAnnotatedAnalysis b)
 
 cT :: Analysis -> UTCTime
 cT Analysis {..} = aCloseT

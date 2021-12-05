@@ -63,6 +63,8 @@ loadAllPairAnalysis = do
     getAnalysis :: MonadIO m => Env -> m (Maybe AnnotatedAnalysis)
     getAnalysis env = do
       anaM <- runReaderT loadPairAnalysis env
-      pure $
-        (\ana -> ((pairToText $ envPair env, intervalToText $ envInterval env), ana))
-          <$> anaM
+      pure $ toAnnotatedAnalysis <$> anaM
+      where
+        toAnnotatedAnalysis :: Analysis -> AnnotatedAnalysis
+        toAnnotatedAnalysis ana =
+          AnnotatedAnalysis ((pairToText $ envPair env, intervalToText $ envInterval env), ana)
