@@ -14,7 +14,13 @@ import qualified Prelude (show)
 -- | App env
 newtype Pair = Pair {unPair :: String}
 
-data Interval = ONE_H | ONE_D | HALF_H deriving (Enum, Bounded, Show, Eq)
+data Interval
+  = FIVE_M
+  | FIVETEEN_M
+  | ONE_H
+  | ONE_D
+  | HALF_H
+  deriving (Enum, Bounded, Show, Eq)
 
 data Env = Env
   { envPair :: Pair,
@@ -27,16 +33,17 @@ pairToText = unPair
 
 textToInterval :: (IsString a, Eq a) => a -> Interval
 textToInterval = \case
+  "5m" -> FIVE_M
+  "15m" -> FIVETEEN_M
   "30m" -> HALF_H
-  "30M" -> HALF_H
-  "1H" -> ONE_H
   "1h" -> ONE_H
-  "1D" -> ONE_D
   "1d" -> ONE_D
   _ -> error "Unsupported interval"
 
 intervalToText :: Interval -> String
 intervalToText = \case
+  FIVE_M -> "5m"
+  FIVETEEN_M -> "15m"
   ONE_D -> "1d"
   ONE_H -> "1h"
   HALF_H -> "30m"
