@@ -1,8 +1,8 @@
 module Torosuke.Runner where
 
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (mapConcurrently_)
 import Control.Monad.Reader
-import qualified Control.Scheduler as Sched (Comp (ParN), traverseConcurrently_)
 import Data.Time.Clock
 import Relude
 import Torosuke.Binance
@@ -83,10 +83,8 @@ dumpDatas updatedKlines analysis dumpAnalysis = do
     else pure ()
 
 multiLiveRunner :: [(Pair, Interval)] -> IO ()
-multiLiveRunner pairs = do
-  Sched.traverseConcurrently_ compStr task pairs
+multiLiveRunner = mapConcurrently_ task
   where
-    compStr = Sched.ParN (fromInteger . toInteger $ length pairs)
     task :: (Pair, Interval) -> IO ()
     task tpl = runReaderT task' (toEnv tpl)
     toEnv (pair, interval) = Env pair interval toroLogger

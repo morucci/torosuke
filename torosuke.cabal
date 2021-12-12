@@ -59,7 +59,7 @@ library
                      , directory                  < 1.3.6.1
                      , mtl                        < 2.2.3
                      , safe-exceptions            < 0.1.7.3
-                     , scheduler
+                     , async
                      , unordered-containers       < 0.2.15
                      , vty
                      , brick                      < 0.65
