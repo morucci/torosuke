@@ -13,7 +13,7 @@ import Torosuke.Types
 
 data TorosukeLiveCli w = TorosukeLiveCli
   { pair :: w ::: [String] <?> "Pair name",
-    interval :: w ::: Text <?> "Interval name"
+    interval :: w ::: [Text] <?> "Interval name"
   }
   deriving stock (Generic)
 
@@ -28,6 +28,7 @@ main = do
   go args
   where
     go :: TorosukeLiveCli Unwrapped -> IO ()
-    go args = multiLiveRunner $ toTpl <$> pair args
+    go args = multiLiveRunner $ toTpl <$> pairs
       where
-        toTpl pair = (Pair pair, textToInterval $ interval args)
+        toTpl (pair, interval) = (Pair pair, textToInterval interval)
+        pairs = (,) <$> pair args <*> interval args
