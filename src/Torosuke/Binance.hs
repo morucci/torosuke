@@ -86,6 +86,11 @@ parseDateValue epoch = tryParse "%s" <|> tryParse "%Es"
     conv :: Int -> String
     conv i = show (round (fromIntegral i / 1000 :: Float) :: Int)
 
+-- See for limit (weight of 1200 / minutes)
+-- https://api.binance.com/api/v3/exchangeInfo
+-- See in response header: x-mbx-used-weight-1m
+-- Also more info in https://dev.binance.vision/t/what-are-the-ip-weights/280
+
 getKlinesURL :: MonadReader Env m => Int -> Maybe UTCTime -> m String
 getKlinesURL limit' endTM' = do
   env <- ask
@@ -108,6 +113,7 @@ getKlines limit endTM = do
   url <- getKlinesURL limit endTM
   request <- parseRequest url
   response <- liftIO $ httpLbs request manager
+  -- print (show $ responseHeaders response :: Text)
   let decoded = decode $ responseBody response :: Maybe BiKlines
   pure $
     KlinesHTTPResponse

@@ -89,6 +89,8 @@ multiLiveRunner = mapConcurrently_ task
     task tpl = runReaderT task' (toEnv tpl)
     toEnv (pair, interval) = Env pair interval toroLogger
     task' = do
+      -- A depth of 100 seems to consume of weight of 1
+      -- theoricaly we can perform 1200 requests by minutes
       (_, updatedKlines, analysis) <- pairFetcherAndAnalyzer Nothing 100
       void $ dumpDatas updatedKlines analysis True
       void $ waitDelay 10
