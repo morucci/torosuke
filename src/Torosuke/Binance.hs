@@ -1,16 +1,24 @@
 module Torosuke.Binance where
 
+import Control.Monad.Catch
 import Control.Monad.Reader
+import Control.Retry (RetryStatus (..))
+import qualified Control.Retry as Retry
 import Data.Aeson (FromJSON, decode, parseJSON, withArray, withScientific, withText)
 import Data.Aeson.Types (parseFail)
 import qualified Data.Scientific as S
 import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Network.HTTP.Client
-  ( Response (responseBody, responseHeaders, responseStatus),
+  ( HttpException (..),
+    Response (responseBody, responseHeaders, responseStatus),
+    host,
     httpLbs,
     newManager,
     parseRequest,
+    path,
+    port,
+    queryString,
     responseBody,
   )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -112,7 +120,7 @@ getKlines limit endTM = do
   manager <- liftIO $ newManager tlsManagerSettings
   url <- getKlinesURL limit endTM
   request <- parseRequest url
-  response <- liftIO $ httpLbs request manager
+  response <- liftIO . retry $ httpLbs request manager
   -- print (show $ responseHeaders response :: Text)
   let decoded = decode $ responseBody response :: Maybe BiKlines
   pure $
@@ -121,3 +129,20 @@ getKlines limit endTM = do
       (responseHeaders response)
       -- Do not bother with in progress candle
       (toKlines <$> decoded)
+
+retry :: (MonadIO m, MonadMask m) => m a -> m a
+retry baseAction =
+  Retry.recovering
+    (Retry.exponentialBackoff backoff <> Retry.limitRetries 3)
+    [handler]
+    (const baseAction)
+  where
+    backoff = 1000000 -- 1s
+    handler (RetryStatus num _ _) = Handler $ \case
+      HttpExceptionRequest req ctx -> do
+        let url = decodeUtf8 $ host req <> ":" <> show (port req) <> path req
+            arg = decodeUtf8 $ queryString req
+            loc = if num == 0 then url <> arg else url
+        putStrLn $ show num <> "/3 " <> loc <> " failed: " <> show ctx
+        pure True
+      InvalidUrlException _ _ -> pure False
