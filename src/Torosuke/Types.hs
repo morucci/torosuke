@@ -51,6 +51,9 @@ intervalToText = \case
 allInterval :: [Interval]
 allInterval = [minBound ..]
 
+allInterval' :: [String]
+allInterval' = map intervalToText allInterval
+
 -- | Generic Kline
 data Kline = Kline
   { openT :: UTCTime,

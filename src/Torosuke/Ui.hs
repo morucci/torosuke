@@ -2,6 +2,7 @@ module Torosuke.Ui where
 
 import Brick
 import Brick.BChan
+import Brick.Widgets.Edit
 import Brick.Widgets.Table (renderTable, table)
 import Control.Concurrent (forkIO, threadDelay)
 import Data.Time.Format
@@ -18,23 +19,26 @@ import Torosuke.Types
     Macd (macdLine, signalLine),
     MacdAnalysis (maMVASL, maSLAZ),
     Pair,
+    allInterval',
     getAnnotations,
     intervalToText,
     kGet,
     pairToText,
+    textToInterval,
   )
 import Witch
 import Prelude
 
 newtype Tick = Tick [AnnotatedAnalysis]
 
-data Name = Viewport1 deriving (Eq, Ord, Show)
+data Name = Viewport1 | CommandEditor deriving (Eq, Ord, Show)
 
 data Filter = NOF | IF Interval | PF Pair
 
 data AppState = AppState
   { analysis :: [AnnotatedAnalysis],
     ticks :: Int,
+    commandEditor :: Editor String Name,
     filterA :: Filter
   }
 
@@ -56,12 +60,17 @@ filterAna NOF ana = ana
 filterAna (IF interval) ana = filter (\a -> interval == snd (getAnnotations a)) ana
 filterAna (PF pair) ana = filter (\a -> pair == fst (getAnnotations a)) ana
 
+commandControl :: Editor String Name
+commandControl = editor CommandEditor (Just 1) ""
+
 drawUI :: AppState -> [Widget Name]
 drawUI s = tableUi
   where
     tableUi =
-      [ viewport Viewport1 Vertical $
-          renderTable $ table $ [headerRow] <> dataRows
+      [ vBox
+          [ renderEditor (str . Prelude.unlines) True (commandEditor s),
+            viewport Viewport1 Vertical $renderTable $ table $ [headerRow] <> dataRows
+          ]
       ]
       where
         headerRow :: [Widget Name]
@@ -169,6 +178,15 @@ handleEvent s (AppEvent (Tick annotedAnalysis)) = do
             analysis = annotedAnalysis
           }
   continue nS
+handleEvent s (VtyEvent ev) = do
+  e <- handleEditorEvent ev (commandEditor s)
+  let content = Prelude.head $ getEditContents e
+      newF = if content `Relude.elem` allInterval' then IF $ textToInterval content else NOF
+  continue $
+    s
+      { commandEditor = e,
+        filterA = newF
+      }
 handleEvent s _ = continue s
 
 theMap :: AttrMap
@@ -182,7 +200,7 @@ theMap =
 getInitialState :: MonadIO m => m AppState
 getInitialState = do
   analysis <- loadAllPairAnalysis
-  pure $ AppState analysis 0 NOF
+  pure $ AppState analysis 0 commandControl NOF
 
 main :: IO ()
 main = do
