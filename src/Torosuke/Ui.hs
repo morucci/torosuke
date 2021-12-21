@@ -16,6 +16,7 @@ import Torosuke.Types
     Klines,
     Macd (macdLine, signalLine),
     MacdAnalysis (maMVASL, maSLAZ),
+    intervalToText,
     kGet,
   )
 import Witch
@@ -65,7 +66,7 @@ drawUI s = tableUi
         dataRows = analysisToRow <$> sort (analysis s)
         analysisToRow :: AnnotatedAnalysis -> [Widget Name]
         analysisToRow ana' =
-          [ str $ fst (fst ana) <> "/" <> snd (fst ana),
+          [ str $ fst (fst ana) <> "/" <> intervalToText (snd (fst ana)),
             str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
             maMVASLToWidget . aMacdAnalisys $ snd ana,
             maSLAZToWidget . aMacdAnalisys $ snd ana,

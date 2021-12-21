@@ -67,4 +67,4 @@ loadAllPairAnalysis = do
       where
         toAnnotatedAnalysis :: Analysis -> AnnotatedAnalysis
         toAnnotatedAnalysis ana =
-          AnnotatedAnalysis ((pairToText $ envPair env, intervalToText $ envInterval env), ana)
+          AnnotatedAnalysis ((pairToText $ envPair env, envInterval env), ana)

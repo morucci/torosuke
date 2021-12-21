@@ -15,12 +15,12 @@ import qualified Prelude (show)
 newtype Pair = Pair {unPair :: String}
 
 data Interval
-  = FIVE_M
-  | FIVETEEN_M
+  = ONE_D
   | ONE_H
-  | ONE_D
   | HALF_H
-  deriving (Enum, Bounded, Show, Eq)
+  | FIVETEEN_M
+  | FIVE_M
+  deriving (Enum, Bounded, Show, Eq, Ord)
 
 data Env = Env
   { envPair :: Pair,
@@ -148,7 +148,7 @@ data Analysis = Analysis
   deriving (Show, Generic)
 
 newtype AnnotatedAnalysis = AnnotatedAnalysis
-  { unAnnotatedAnalysis :: ((String, String), Analysis)
+  { unAnnotatedAnalysis :: ((String, Interval), Analysis)
   }
 
 instance Eq AnnotatedAnalysis where
