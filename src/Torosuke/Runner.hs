@@ -3,7 +3,7 @@ module Torosuke.Runner where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (mapConcurrently_)
 import Control.Monad.Reader
-import Data.Time.Clock
+import Data.Time
 import Relude
 import Torosuke.Binance
 import Torosuke.Store
@@ -12,7 +12,9 @@ import Torosuke.Types
 import Prelude (head)
 
 toroLogger :: String -> IO ()
-toroLogger = print
+toroLogger msg = do
+  now <- getCurrentTime
+  putStrLn $ "[" <> show now <> "] " <> msg
 
 pairFetcherAndAnalyzer :: Maybe UTCTime -> Int -> ReaderT Env IO (UTCTime, Klines, Analysis)
 pairFetcherAndAnalyzer until depth = do
