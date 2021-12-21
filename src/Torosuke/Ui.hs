@@ -12,12 +12,16 @@ import Torosuke.Store (loadAllPairAnalysis)
 import Torosuke.Types
   ( Analysis (aCloseT, aKlines, aMacd, aMacdAnalisys),
     AnnotatedAnalysis (unAnnotatedAnalysis),
+    Interval,
     Kline (close, volume),
     Klines,
     Macd (macdLine, signalLine),
     MacdAnalysis (maMVASL, maSLAZ),
+    Pair,
+    getAnnotations,
     intervalToText,
     kGet,
+    pairToText,
   )
 import Witch
 import Prelude
@@ -26,9 +30,12 @@ newtype Tick = Tick [AnnotatedAnalysis]
 
 data Name = Viewport1 deriving (Eq, Ord, Show)
 
+data Filter = NOF | IF Interval | PF Pair
+
 data AppState = AppState
   { analysis :: [AnnotatedAnalysis],
-    ticks :: Int
+    ticks :: Int,
+    filterA :: Filter
   }
 
 showFullPrecision :: Int -> Double -> String
@@ -43,6 +50,11 @@ app =
       appStartEvent = return,
       appAttrMap = const theMap
     }
+
+filterAna :: Filter -> [AnnotatedAnalysis] -> [AnnotatedAnalysis]
+filterAna NOF ana = ana
+filterAna (IF interval) ana = filter (\a -> interval == snd (getAnnotations a)) ana
+filterAna (PF pair) ana = filter (\a -> pair == fst (getAnnotations a)) ana
 
 drawUI :: AppState -> [Widget Name]
 drawUI s = tableUi
@@ -63,10 +75,10 @@ drawUI s = tableUi
             str "Close Price (p-2, p-1, p)"
           ]
         dataRows :: [[Widget Name]]
-        dataRows = analysisToRow <$> sort (analysis s)
+        dataRows = analysisToRow <$> sort (filterAna (filterA s) (analysis s))
         analysisToRow :: AnnotatedAnalysis -> [Widget Name]
         analysisToRow ana' =
-          [ str $ fst (fst ana) <> "/" <> intervalToText (snd (fst ana)),
+          [ str $ pairToText (fst (fst ana)) <> "/" <> intervalToText (snd (fst ana)),
             str $ formatTime defaultTimeLocale "%F %R" $ aCloseT $ snd ana,
             maMVASLToWidget . aMacdAnalisys $ snd ana,
             maSLAZToWidget . aMacdAnalisys $ snd ana,
@@ -170,7 +182,7 @@ theMap =
 getInitialState :: MonadIO m => m AppState
 getInitialState = do
   analysis <- loadAllPairAnalysis
-  pure $ AppState analysis 0
+  pure $ AppState analysis 0 NOF
 
 main :: IO ()
 main = do

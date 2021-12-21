@@ -12,7 +12,7 @@ import Prelude (head)
 import qualified Prelude (show)
 
 -- | App env
-newtype Pair = Pair {unPair :: String}
+newtype Pair = Pair {unPair :: String} deriving (Eq, Ord)
 
 data Interval
   = ONE_D
@@ -148,8 +148,11 @@ data Analysis = Analysis
   deriving (Show, Generic)
 
 newtype AnnotatedAnalysis = AnnotatedAnalysis
-  { unAnnotatedAnalysis :: ((String, Interval), Analysis)
+  { unAnnotatedAnalysis :: ((Pair, Interval), Analysis)
   }
+
+getAnnotations :: AnnotatedAnalysis -> (Pair, Interval)
+getAnnotations a = fst $ unAnnotatedAnalysis a
 
 instance Eq AnnotatedAnalysis where
   (==) a b = fst (unAnnotatedAnalysis a) == fst (unAnnotatedAnalysis b)
